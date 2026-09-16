@@ -99,13 +99,22 @@ function Avatar({ player, small = false }: { player: Player; small?: boolean }) 
     </span>
   );
 }
+function LaurelMark({ size = 30 }: { size?: number }) {
+  return (
+    <svg className="laurel-mark" width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M20 38C9 34 7 20 15 10M28 38c11-4 13-18 5-28" />
+      <path d="M15 31c-5 0-8-2-9-5 5-1 8 0 10 3M13 24c-4-2-6-5-6-8 5 0 8 2 9 5M15 17c-2-4-1-8 1-10 4 3 5 6 3 10M33 31c5 0 8-2 9-5-5-1-8 0-10 3M35 24c4-2 6-5 6-8-5 0-8 2-9 5M33 17c2-4 1-8-1-10-4 3-5 6-3 10" />
+      <path d="M24 14l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1 3-6Z" />
+    </svg>
+  );
+}
 function TeamBadge({ gold = false, small = false }: { gold?: boolean; small?: boolean }) {
   return (
     <span className={`team-badge ${gold ? 'gold' : ''} ${small ? 'small' : ''}`}>
       {gold ? (
         <Zap size={small ? 20 : 29} fill="currentColor" />
       ) : (
-        <Sun size={small ? 22 : 31} strokeWidth={1.8} />
+        <LaurelMark size={small ? 25 : 35} />
       )}
     </span>
   );
@@ -282,14 +291,14 @@ function PlayerRow({
 export default function App() {
   const [profile, setProfile] = useState(() => {
     try {
-      return localStorage.getItem('sunday:profile') === 'guest' ? 'guest' : 'joel';
+      return localStorage.getItem('elysian-fields:profile') === 'guest' ? 'guest' : 'joel';
     } catch {
       return 'joel';
     }
   });
   function changeProfile(next: string) {
     try {
-      localStorage.setItem('sunday:profile', next);
+      localStorage.setItem('elysian-fields:profile', next);
     } catch {
       /* Workspace reports storage errors. */
     }
@@ -344,7 +353,7 @@ function Workspace({
   }, []);
   useEffect(() => {
     try {
-      localStorage.setItem(`sunday:v1:${profile}`, JSON.stringify(state));
+      localStorage.setItem(`elysian-fields:v1:${profile}`, JSON.stringify(state));
       setSaved(true);
     } catch {
       setSaved(false);
@@ -486,9 +495,12 @@ function Workspace({
             navigate('team');
           }}
         >
-          <Sun size={30} strokeWidth={2} />
-          <span>
-            sunday<span className="brand-dot">.</span>
+          <LaurelMark size={34} />
+          <span className="brand-name">
+            elysian{' '}
+            <span>
+              fields<span className="brand-dot">.</span>
+            </span>
           </span>
         </a>
         <button className="league-picker" onClick={() => navigate('league')}>
@@ -523,10 +535,11 @@ function Workspace({
               <Sun size={20} />
             </span>
             <strong>
-              A little less noise.
-              <br />A lot more football.
+              Where lineups rise.
+              <br />
+              Where legends play.
             </strong>
-            <p>Your Sunday starts here.</p>
+            <p>Welcome to the fields.</p>
           </div>
           <button className="nav-item" onClick={() => setModal('settings')}>
             <Settings2 size={18} />
@@ -597,18 +610,18 @@ function Workspace({
             <div>
               <div className="eyebrow">
                 {page === 'team'
-                  ? 'FANTASY, IN FOCUS'
+                  ? 'WELCOME TO THE FIELDS'
                   : page === 'matchup'
                     ? 'EVERY POINT COUNTS'
                     : page === 'players'
                       ? 'FIND YOUR NEXT STARTER'
                       : page === 'league'
-                        ? 'GOOD COMPANY. GREAT COMPETITION.'
+                        ? 'YOUR LEAGUE. YOUR ARENA.'
                         : 'THE LATEST IN YOUR CLUBHOUSE'}
               </div>
               <h1>
                 {page === 'team'
-                  ? 'Your team. Your Sunday.'
+                  ? 'Your team. Your field.'
                   : page === 'matchup'
                     ? 'This week’s matchup.'
                     : page === 'players'
@@ -888,14 +901,14 @@ function Workspace({
                         <span className="field-o" />
                       </div>
                       <div className="field-copy">
-                        <span className="eyebrow">SET. SWAP. SUNDAY.</span>
+                        <span className="eyebrow">SET THE FORMATION</span>
                         <h3>
-                          Good calls start
+                          Enter the arena
                           <br />
                           with a clear view.
                         </h3>
                         <p>
-                          Make your moves. We’ll keep
+                          Set your formation. We’ll keep
                           <br />
                           everything in its place.
                         </p>
@@ -1239,11 +1252,11 @@ function Workspace({
           <footer className="page-footer">
             <span>
               <Sun size={13} />
-              sunday.
+              elysian fields.
             </span>
             <span>More game. Less noise.</span>
             <button onClick={() => setModal('help')}>
-              Built for your Sunday
+              Built for the fields
               <ArrowUpRight size={12} />
             </button>
           </footer>
@@ -1301,7 +1314,7 @@ function Workspace({
                       <i />
                     </span>
                     <span>
-                      {t === 'dark' ? 'Clubhouse' : t === 'dusk' ? 'After hours' : 'Day game'}
+                      {t === 'dark' ? 'Elysian night' : t === 'dusk' ? 'Oracle dusk' : 'Marble day'}
                       {settings.theme === t && <Check size={13} />}
                     </span>
                   </button>
@@ -1319,7 +1332,7 @@ function Workspace({
                     onClick={() => updateSetting('accent', a)}
                   >
                     <span>{settings.accent === a && <Check size={12} />}</span>
-                    {a[0].toUpperCase() + a.slice(1)}
+                    {a === 'mint' ? 'Laurel' : a === 'lavender' ? 'Oracle' : 'Bronze'}
                   </button>
                 ))}
               </div>

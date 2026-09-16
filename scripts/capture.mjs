@@ -16,7 +16,7 @@ await expect
 await page.screenshot({ path: 'test-results/previews/mobile.png', fullPage: true });
 await page.setViewportSize({ width: 1440, height: 1050 });
 await page.getByRole('button', { name: 'Customize', exact: true }).click();
-await page.getByRole('button', { name: 'Day game', exact: true }).click();
+await page.getByRole('button', { name: 'Marble day', exact: true }).click();
 await page.keyboard.press('Escape');
 await page.screenshot({ path: 'test-results/previews/light.png', fullPage: true });
 await browser.close();

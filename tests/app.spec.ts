@@ -63,14 +63,14 @@ test('keyboard movement is functional and Escape is forgiving', async ({ page })
 test('settings persist per profile; dialogs trap focus and Escape closes', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Customize', exact: true }).click();
-  await page.getByRole('button', { name: 'Day game', exact: true }).click();
+  await page.getByRole('button', { name: 'Marble day', exact: true }).click();
   await expect(page.locator('html')).toHaveCSS('background-color', 'rgb(245, 245, 240)');
   await expect(page.getByRole('heading', { name: 'Sunday Scaries', exact: true })).toHaveCSS(
     'color',
     'rgb(38, 49, 38)',
   );
-  await page.getByRole('button', { name: 'After hours', exact: true }).click();
-  await page.getByRole('button', { name: 'Lavender', exact: true }).click();
+  await page.getByRole('button', { name: 'Oracle dusk', exact: true }).click();
+  await page.getByRole('button', { name: 'Oracle', exact: true }).click();
   await page.getByRole('button', { name: 'Compact', exact: true }).click();
   await page.getByRole('textbox', { name: 'TEAM NAME' }).fill('The Clean Sweep');
   await page.keyboard.press('Escape');
@@ -127,7 +127,7 @@ test('mobile has no horizontal overflow and supports tap swaps', async ({ page }
 test('corrupt persisted data recovers and reduced motion is honored', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.addInitScript(() =>
-    localStorage.setItem('sunday:v1:joel', '{"roster":[{"playerId":"missing"}]}'),
+    localStorage.setItem('elysian-fields:v1:joel', '{"roster":[{"playerId":"missing"}]}'),
   );
   await page.goto('/');
   await expect(page.getByTestId('slot-0')).toContainText('Josh Allen');

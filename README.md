@@ -1,4 +1,4 @@
-# Sunday
+# Elysian Fields
 
 **More game. Less noise.** A responsive fantasy football design prototype with a dark clubhouse theme, tactile roster management, and personal layouts.
 
@@ -61,4 +61,4 @@ npm run test:e2e
 
 ## OCI deployment
 
-See [docs/oci-deployment.md](docs/oci-deployment.md). The production image builds static assets and serves them with unprivileged Nginx on port 8080. SSH keys and OCI connection details are not part of the repository.
+See [docs/oci-deployment.md](docs/oci-deployment.md). Production is a native Caddy systemd service serving versioned static releases. SSH keys and OCI connection details are not part of the repository.

@@ -1,6 +1,6 @@
-# Deploy Sunday to OCI
+# Deploy Elysian Fields to OCI
 
-The app is a static frontend at this stage. It can run on an OCI compute VM using Docker Compose. No database or paid API credentials are required for the design preview.
+The app is a static frontend at this stage. It runs natively on the OCI compute VM with Caddy managed by systemd. No database or paid API credentials are required for the design preview.
 
 ## Information needed for the actual deployment
 
@@ -10,43 +10,43 @@ The app is a static frontend at this stage. It can run on an OCI compute VM usin
 
 Use the private key from its local path; never commit it or paste its contents into the app.
 
-## Build and run on the VM
+## Build and publish
 
-After Docker Engine with the Compose plugin is available, clone the private repository using the VM's authorized GitHub access:
+Build on a trusted workstation and copy only the generated static files to a versioned release directory:
 
-```sh
-git clone https://github.com/apoll024/fantasy-football.git
-cd fantasy-football
-cp .env.example .env
-docker compose up -d --build
-docker compose ps
-curl http://127.0.0.1:8080/health
+```powershell
+npm ci
+npm run build
+tar.exe -czf elysian-fields-dist.tar.gz -C dist .
+scp -i C:\path\to\key elysian-fields-dist.tar.gz ubuntu@INSTANCE_IP:/tmp/
 ```
 
-The default port is bound to loopback. Preview it through a tunnel from your computer:
+On the VM, extract the build and switch the `current` symlink only after extraction succeeds:
 
 ```sh
-ssh -i /path/to/key -L 8080:127.0.0.1:8080 USER@INSTANCE_IP
+sudo mkdir -p /srv/elysian-fields/releases/RELEASE_ID
+sudo tar -xzf /tmp/elysian-fields-dist.tar.gz -C /srv/elysian-fields/releases/RELEASE_ID
+sudo chown -R root:root /srv/elysian-fields/releases/RELEASE_ID
+sudo find /srv/elysian-fields/releases/RELEASE_ID -type d -exec chmod 755 {} \;
+sudo find /srv/elysian-fields/releases/RELEASE_ID -type f -exec chmod 644 {} \;
+sudo ln -sfn /srv/elysian-fields/releases/RELEASE_ID /srv/elysian-fields/current
+sudo systemctl reload caddy
 ```
 
-Then open http://127.0.0.1:8080 locally. Adapt the SSH username to the VM image.
+The native Caddy configuration lives at `/etc/caddy/Caddyfile` and serves `/srv/elysian-fields/current`. Validate it with `sudo caddy validate --config /etc/caddy/Caddyfile` before reloading.
 
-For public hosting, put the existing TLS reverse proxy in front of `127.0.0.1:8080`, configure the domain, and permit ports 80/443 in the OCI network security rules and host firewall. An explicit direct HTTP preview can bind `APP_BIND=0.0.0.0` in `.env`; that also requires allowing the chosen port through both firewalls. Real account authentication should launch behind HTTPS.
+Ports 80 and 443 must be permitted in the OCI network security rules and host firewall. Caddy obtains and renews TLS certificates automatically when the configured public hostname resolves to the VM. Real account authentication should launch behind HTTPS.
 
-## Update
+## Roll back
 
 ```sh
-git pull --ff-only
-docker compose up -d --build
-docker compose ps
+sudo ln -sfn /srv/elysian-fields/releases/PREVIOUS_RELEASE /srv/elysian-fields/current
+sudo systemctl reload caddy
 ```
 
 ## Runtime
 
-- Container port: 8080; health endpoint: `/health`.
-- Static assets have immutable-style long caching; the entry document is revalidated.
-- Runtime uses a non-root Nginx image, read-only root filesystem, temporary writable `/tmp`, and no added Linux capabilities.
-- The source image tags are portable build inputs. Verify the VM architecture and image availability during deployment.
+- Caddy runs as its dedicated system user under systemd.
+- Static assets have long caching; the entry document is revalidated.
+- The web root is owned by root and is read-only to Caddy.
 - Current state lives in each visitor's browser. Container restarts do not delete browser state; clearing browser storage does.
-
-The container configuration must be verified on the actual OCI host before declaring deployment complete.

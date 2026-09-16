@@ -85,7 +85,11 @@ export function freshState(): ProfileState {
 export function loadProfile(profile: string): ProfileState {
   const fallback = freshState();
   try {
-    const raw = JSON.parse(localStorage.getItem(`sunday:v1:${profile}`) || 'null');
+    const raw = JSON.parse(
+      localStorage.getItem(`elysian-fields:v1:${profile}`) ||
+        localStorage.getItem(`sunday:v1:${profile}`) ||
+        'null',
+    );
     if (!raw || !validRoster(raw.roster)) return fallback;
     const s = raw.settings || {};
     return {
