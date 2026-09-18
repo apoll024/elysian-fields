@@ -1,4 +1,4 @@
-elysian.170.9.6.93.sslip.io {
+(elysian_site) {
   encode zstd gzip
 
   header {
@@ -24,4 +24,16 @@ elysian.170.9.6.93.sslip.io {
     try_files {path} /index.html
     file_server
   }
+}
+
+elysian.170.9.6.93.sslip.io {
+  import elysian_site
+}
+
+:5000 {
+  import elysian_site
+}
+
+:5003 {
+  import elysian_site
 }

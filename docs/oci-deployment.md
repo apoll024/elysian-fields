@@ -35,7 +35,7 @@ sudo systemctl reload caddy
 
 The native Caddy configuration lives at `/etc/caddy/Caddyfile` and serves `/srv/elysian-fields/current`. Validate it with `sudo caddy validate --config /etc/caddy/Caddyfile` before reloading.
 
-Ports 80 and 443 must be permitted in the OCI network security rules and host firewall. Caddy obtains and renews TLS certificates automatically when the configured public hostname resolves to the VM. Real account authentication should launch behind HTTPS.
+The VM firewall permits ports 80, 443, 5000, and 5003. Caddy serves the same release at `https://elysian.170.9.6.93.sslip.io`, `http://170.9.6.93:5000`, and `http://170.9.6.93:5003`. OCI currently forwards port 5003, which is verified externally; port 5000 works on the VM but external requests time out. OCI network rules must also allow any port intended for public access. Caddy obtains and renews TLS certificates automatically for the hostname. Ports 5000 and 5003 are plain HTTP; real account authentication should launch behind HTTPS.
 
 ## Roll back
 
