@@ -203,6 +203,8 @@ button:hover:not(:disabled) {
   display: flex;
   align-items: center;
   gap: 11px;
+  padding: 0;
+  text-align: left;
   margin: 0 13px 37px;
   font-size: 24px;
   font-weight: 750;
@@ -759,8 +761,32 @@ h1 {
   background: var(--accent-tint);
   color: var(--accent);
 }
-.lineup-toolbar > .icon-button {
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin-bottom: 6px;
+}
+.optimize-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 550;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  min-height: 30px;
+  white-space: nowrap;
+}
+.optimize-button:hover {
+  color: var(--accent);
+  background: var(--accent-tint);
+  border-color: var(--accent-border);
+}
+.optimize-button > svg {
+  flex: none;
 }
 .roster-hint,
 .move-hint {
@@ -3041,6 +3067,12 @@ legend {
   }
   .lineup-toolbar {
     padding-inline: 15px;
+  }
+  .optimize-button {
+    padding: 7px;
+  }
+  .optimize-button > span {
+    display: none;
   }
   .tabs {
     gap: 23px;

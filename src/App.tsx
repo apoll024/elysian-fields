@@ -50,12 +50,15 @@ import {
   Trophy,
   Undo2,
   Users,
+  Wand2,
   X,
   Zap,
 } from 'lucide-react';
 import {
   allPlayers,
   freeAgents,
+  opposingLineup,
+  opposingProjection,
   playerById,
   standings,
   type Player,
@@ -64,7 +67,9 @@ import {
 import {
   canSwap,
   loadProfile,
+  optimizeLineup,
   playSnap,
+  startingProjection,
   swapPlayers,
   type ProfileState,
   type Settings,
@@ -79,12 +84,6 @@ const navigation: { id: Page; label: string; icon: typeof Users }[] = [
   { id: 'activity', label: 'Activity', icon: ActivityIcon },
 ];
 const fmt = (n: number) => n.toFixed(1);
-const initials = (name: string) =>
-  name
-    .split(' ')
-    .slice(0, 2)
-    .map((n) => n[0])
-    .join('');
 function Avatar({ player, small = false }: { player: Player; small?: boolean }) {
   return (
     <span
@@ -327,7 +326,7 @@ function Workspace({
     [position, setPosition] = useState('ALL'),
     [pool, setPool] = useState<'available' | 'all' | 'watchlist'>('available');
   const [history, setHistory] = useState<RosterSlot[][]>([]),
-    [toast, setToast] = useState(''),
+    [toast, setToast] = useState<{ text: string; undoable?: boolean }>({ text: '' }),
     [saved, setSaved] = useState(true);
   const [smallScreen, setSmallScreen] = useState(
     () => window.matchMedia('(max-width: 650px)').matches,
@@ -342,9 +341,8 @@ function Workspace({
     () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   );
   const moving = active || selected,
-    projection = roster
-      .filter((s) => s.label !== 'BN')
-      .reduce((n, s) => n + playerById[s.playerId].projection, 0);
+    projection = startingProjection(roster),
+    starters = roster.filter((s) => s.label !== 'BN');
   useEffect(() => {
     const q = window.matchMedia('(prefers-reduced-motion: reduce)');
     const listener = () => setReduceMotion(q.matches);
@@ -366,8 +364,8 @@ function Workspace({
     document.documentElement.dataset.motion = settings.motion && !reduceMotion ? 'on' : 'off';
   }, [settings, reduceMotion]);
   useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(''), 5500);
+    if (!toast.text) return;
+    const timer = setTimeout(() => setToast({ text: '' }), 5500);
     return () => clearTimeout(timer);
   }, [toast]);
   useEffect(() => {
@@ -412,7 +410,7 @@ function Workspace({
     }));
     setSelected(null);
     setFlash([from, to]);
-    setToast(text);
+    setToast({ text, undoable: true });
     playSnap(settings.sound);
   }
   function undo() {
@@ -424,7 +422,30 @@ function Workspace({
       activity: [addActivity('Undid the last lineup change'), ...s.activity].slice(0, 30),
     }));
     setHistory((h) => h.slice(0, -1));
-    setToast('Lineup restored');
+    setToast({ text: 'Lineup restored', undoable: true });
+    playSnap(settings.sound);
+  }
+  // Fills every starting slot with the best legal option already on the roster.
+  // A lineup that needs no change is the common case on a fresh profile, so it
+  // says so instead of adding an empty entry to history and activity.
+  function optimize() {
+    const next = optimizeLineup(roster);
+    if (next === roster) {
+      setToast({ text: 'Your lineup is already the best on paper' });
+      return;
+    }
+    const gained = startingProjection(next) - projection;
+    const text = `Set the best lineup on paper · +${fmt(gained)} projected`;
+    setHistory((h) => [...h.slice(-19), roster.map((s) => ({ ...s }))]);
+    setState((s) => ({
+      ...s,
+      roster: next,
+      activity: [addActivity(text), ...s.activity].slice(0, 30),
+    }));
+    setSelected(null);
+    setFilter('all');
+    setFlash(next.filter((s, i) => s.playerId !== roster[i].playerId).map((s) => s.id));
+    setToast({ text, undoable: true });
     playSnap(settings.sound);
   }
   function toggleWatch(p: Player) {
@@ -433,7 +454,7 @@ function Workspace({
       ...s,
       watchlist: watched ? s.watchlist.filter((id) => id !== p.id) : [...s.watchlist, p.id],
     }));
-    setToast(`${p.name} ${watched ? 'removed from' : 'added to'} watchlist`);
+    setToast({ text: `${p.name} ${watched ? 'removed from' : 'added to'} watchlist` });
   }
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 7 } }),
@@ -487,14 +508,7 @@ function Workspace({
         />
       )}
       <aside inert={smallScreen && !mobileNav} className={`sidebar ${mobileNav ? 'open' : ''}`}>
-        <a
-          className="brand"
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            navigate('team');
-          }}
-        >
+        <button className="brand" onClick={() => navigate('team')}>
           <LaurelMark size={34} />
           <span className="brand-name">
             elysian{' '}
@@ -502,7 +516,7 @@ function Workspace({
               fields<span className="brand-dot">.</span>
             </span>
           </span>
-        </a>
+        </button>
         <button className="league-picker" onClick={() => navigate('league')}>
           <span className="league-icon">
             <Shield size={19} />
@@ -715,19 +729,36 @@ function Workspace({
                           }}
                         >
                           {f === 'all' ? 'All players' : f === 'starters' ? 'Starters' : 'Bench'}
-                          <span>{f === 'all' ? 15 : f === 'starters' ? 9 : 6}</span>
+                          <span>
+                            {f === 'all'
+                              ? roster.length
+                              : f === 'starters'
+                                ? starters.length
+                                : roster.length - starters.length}
+                          </span>
                         </button>
                       ))}
                     </div>
-                    <button
-                      className="icon-button"
-                      aria-label="Undo last lineup change"
-                      disabled={!history.length}
-                      onClick={undo}
-                      title="Undo last change"
-                    >
-                      <Undo2 size={17} />
-                    </button>
+                    <div className="toolbar-actions">
+                      <button
+                        className="optimize-button"
+                        onClick={optimize}
+                        aria-label="Best lineup"
+                        title="Start the highest-projected players you already own"
+                      >
+                        <Wand2 size={14} />
+                        <span>Best lineup</span>
+                      </button>
+                      <button
+                        className="icon-button"
+                        aria-label="Undo last lineup change"
+                        disabled={!history.length}
+                        onClick={undo}
+                        title="Undo last change"
+                      >
+                        <Undo2 size={17} />
+                      </button>
+                    </div>
                   </div>
                   {selected ? (
                     <div className="move-hint">
@@ -838,7 +869,7 @@ function Workspace({
                   <div className="lineup-footer">
                     <span>
                       <Shield size={14} />
-                      Full PPR · 9 starters
+                      Full PPR · {starters.length} starters
                     </span>
                     <span>
                       Projected total<strong>{fmt(projection)}</strong>
@@ -868,16 +899,20 @@ function Workspace({
                       <div className="matchup-scores">
                         <strong>{fmt(projection)}</strong>
                         <span>PROJECTED</span>
-                        <strong>143.6</strong>
+                        <strong>{fmt(opposingProjection)}</strong>
                       </div>
                       <div className="matchup-balance">
-                        <span style={{ width: `${(projection / (projection + 143.6)) * 100}%` }} />
+                        <span
+                          style={{
+                            width: `${(projection / (projection + opposingProjection)) * 100}%`,
+                          }}
+                        />
                       </div>
                       <div className="matchup-caption">
                         <span>Your edge</span>
                         <strong>
-                          {projection >= 143.6 ? '+' : '−'}
-                          {fmt(Math.abs(projection - 143.6))} pts
+                          {projection >= opposingProjection ? '+' : '−'}
+                          {fmt(Math.abs(projection - opposingProjection))} pts
                         </strong>
                       </div>
                       <button className="button full secondary" onClick={() => navigate('matchup')}>
@@ -976,13 +1011,16 @@ function Workspace({
                   <TeamBadge gold />
                   <h2>Fourth & Gold</h2>
                   <p>6–2 · 2nd place</p>
-                  <strong>143.6</strong>
+                  <strong>{fmt(opposingProjection)}</strong>
                 </div>
               </div>
               <div className="matchup-note">
                 <TrendingUp size={17} />
-                Your current lineup is projected {fmt(Math.abs(projection - 143.6))} points{' '}
-                {projection >= 143.6 ? 'ahead' : 'behind'}. Projections are illustrative.
+                Your current lineup is projected {fmt(
+                  Math.abs(projection - opposingProjection),
+                )}{' '}
+                points {projection >= opposingProjection ? 'ahead' : 'behind'}. Projections are
+                illustrative.
               </div>
               <div className="head-to-head-header">
                 <span>YOUR LINEUP</span>
@@ -995,17 +1033,9 @@ function Workspace({
                 .filter((s) => s.label !== 'BN')
                 .map((s, i) => {
                   const p = playerById[s.playerId];
-                  const opponents = [
-                    ['Lamar Jackson', 25.2],
-                    ['Bijan Robinson', 20.1],
-                    ['De’Von Achane', 18.2],
-                    ['Justin Jefferson', 20.7],
-                    ['Amon-Ra St. Brown', 17.2],
-                    ['George Kittle', 13.8],
-                    ['Drake London', 14.5],
-                    ['Jake Bates', 7.2],
-                    ['Pittsburgh Steelers', 6.7],
-                  ] as const;
+                  // The demo opponent is a fixed nine, so a lineup with a
+                  // different starting shape simply leaves the far side blank.
+                  const rival = opposingLineup[i];
                   return (
                     <div className="head-to-head" key={s.id}>
                       <button onClick={() => setDetail(p)}>
@@ -1015,14 +1045,14 @@ function Workspace({
                           <small>{p.team}</small>
                         </span>
                       </button>
-                      <strong className={p.projection > opponents[i][1] ? 'winning' : ''}>
+                      <strong className={rival && p.projection > rival.projection ? 'winning' : ''}>
                         {fmt(p.projection)}
                       </strong>
                       <span className={`position position-${s.label.toLowerCase()}`}>
                         {s.label}
                       </span>
-                      <strong>{fmt(opponents[i][1])}</strong>
-                      <span className="opposing-player">{opponents[i][0]}</span>
+                      <strong>{rival ? fmt(rival.projection) : '—'}</strong>
+                      <span className="opposing-player">{rival ? rival.name : '—'}</span>
                     </div>
                   );
                 })}
@@ -1160,7 +1190,10 @@ function Workspace({
                 <div className="card">
                   <LayoutGrid size={22} />
                   <span>
-                    THE LINEUP<strong>9 starters · 6 bench</strong>
+                    THE LINEUP
+                    <strong>
+                      {starters.length} starters · {roster.length - starters.length} bench
+                    </strong>
                   </span>
                 </div>
               </div>
@@ -1262,19 +1295,17 @@ function Workspace({
           </footer>
         </main>
       </div>
-      {toast && (
+      {toast.text && (
         <div className="toast" role="status">
           <span className="toast-check">
             <Check size={16} />
           </span>
-          <span>{toast}</span>
-          {history.length > 0 && (toast.startsWith('Swapped ') || toast === 'Lineup restored') && (
-            <button onClick={undo}>Undo</button>
-          )}
+          <span>{toast.text}</span>
+          {toast.undoable && history.length > 0 && <button onClick={undo}>Undo</button>}
           <button
             className="icon-button"
             aria-label="Dismiss notification"
-            onClick={() => setToast('')}
+            onClick={() => setToast({ text: '' })}
           >
             <X size={16} />
           </button>
@@ -1444,6 +1475,17 @@ function Workspace({
                 <p>
                   Use the swap button at the end of a row, then choose a highlighted position. With
                   a keyboard, focus the drag handle, press Space, use the arrows, then Space again.
+                </p>
+              </span>
+            </div>
+            <div>
+              <Wand2 />
+              <span>
+                <h3>One button for a clean start.</h3>
+                <p>
+                  Best lineup starts the highest-projected player you own at every spot, flex
+                  included. It only moves players already on your roster, and Undo puts the lineup
+                  back exactly as it was.
                 </p>
               </span>
             </div>

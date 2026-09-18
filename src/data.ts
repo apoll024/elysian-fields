@@ -336,3 +336,16 @@ export const standings = [
     color: '#91acb8',
   },
 ];
+// The opposing starters in the Week 9 demo matchup, in starting-slot order.
+export const opposingLineup: { name: string; projection: number }[] = [
+  { name: 'Lamar Jackson', projection: 25.2 },
+  { name: 'Bijan Robinson', projection: 20.1 },
+  { name: 'De’Von Achane', projection: 18.2 },
+  { name: 'Justin Jefferson', projection: 20.7 },
+  { name: 'Amon-Ra St. Brown', projection: 17.2 },
+  { name: 'George Kittle', projection: 13.8 },
+  { name: 'Drake London', projection: 14.5 },
+  { name: 'Jake Bates', projection: 7.2 },
+  { name: 'Pittsburgh Steelers', projection: 6.7 },
+];
+export const opposingProjection = opposingLineup.reduce((total, p) => total + p.projection, 0);

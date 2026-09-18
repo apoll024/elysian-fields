@@ -16,6 +16,7 @@ Open http://127.0.0.1:5173. Build production assets with `npm run build` and ins
 ## What works
 
 - Roster swaps with mouse, touch, keyboard, or two clicks. Both players must fit their destination positions. Nearby valid targets snap into place; invalid drops and Escape cancel safely.
+- **Best lineup** fills every starting slot, flex included, with the highest-projected player already on your roster. It only rearranges players you own, reports plainly when nothing can be improved, and is a single undo away. Ranking is a plain sort on the projection field — there is no model behind it.
 - Undo for the last 20 lineup changes in the current session, with a persistent activity feed.
 - Projected totals update immediately with the lineup. Matchup comparison, standings, searchable player pool, player details, and saved watchlists.
 - Three themes, three accent colors, two densities, a collapsible context rail, optional synthesized snap sounds, and reduced-motion support.
@@ -30,14 +31,14 @@ Local profiles demonstrate personalization; they are not authenticated accounts.
 
 ## Structure
 
-| File                | Responsibility                                                                 |
-| ------------------- | ------------------------------------------------------------------------------ |
-| `src/App.tsx`       | Views, accessible dialogs, roster interactions, and local state                |
-| `src/styles.css`    | Theme tokens, responsive layouts, and motion                                   |
-| `src/data.ts`       | Typed demo fixtures; replace via a provider adapter when paid data is selected |
-| `src/model.ts`      | Eligibility, immutable swaps, persisted-state validation, and optional audio   |
-| `src/model.test.ts` | Lineup rules and corrupt-data protection                                       |
-| `tests/app.spec.ts` | Browser interaction and mobile regression checks                               |
+| File                | Responsibility                                                                                      |
+| ------------------- | --------------------------------------------------------------------------------------------------- |
+| `src/App.tsx`       | Views, accessible dialogs, roster interactions, and local state                                     |
+| `src/styles.css`    | Theme tokens, responsive layouts, and motion                                                        |
+| `src/data.ts`       | Typed demo fixtures; replace via a provider adapter when paid data is selected                      |
+| `src/model.ts`      | Eligibility, immutable swaps, best-lineup selection, persisted-state validation, and optional audio |
+| `src/model.test.ts` | Lineup rules, best-lineup selection, and corrupt-data protection                                    |
+| `tests/app.spec.ts` | Browser interaction and mobile regression checks                                                    |
 
 Future API keys belong in a server-side integration. Do not place credentials in `VITE_*` variables, browser code, or committed files. The future backend should own account authorization, roster locks, transactions, and authoritative scoring; client projections remain a presentation layer.
 

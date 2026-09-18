@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { initialRoster, playerById } from './data';
-import { canSwap, eligible, swapPlayers, validRoster } from './model';
+import {
+  canSwap,
+  eligible,
+  optimizeLineup,
+  startingProjection,
+  swapPlayers,
+  validRoster,
+} from './model';
 
 describe('lineup rules', () => {
   it('permits only RB, WR, and TE in the flex slot', () => {
@@ -41,5 +48,54 @@ describe('lineup rules', () => {
       false,
     );
     expect(validRoster(initialRoster)).toBe(true);
+  });
+});
+
+describe('best lineup', () => {
+  // The demo roster ships in its optimal arrangement, so every case here has to
+  // break the lineup first or it asserts nothing.
+  const starterIds = (roster: typeof initialRoster) =>
+    roster
+      .filter((s) => s.label !== 'BN')
+      .map((s) => s.playerId)
+      .sort();
+
+  it('totals only the starting slots', () => {
+    expect(startingProjection(initialRoster)).toBeCloseTo(151.9);
+    expect(startingProjection(initialRoster.map((s) => ({ ...s, label: 'BN' as const })))).toBe(0);
+  });
+  it('returns the same roster when nothing can be improved', () => {
+    expect(optimizeLineup(initialRoster)).toBe(initialRoster);
+  });
+  it('promotes a benched starter and demotes the player who took the slot', () => {
+    const weakened = swapPlayers(initialRoster, 'slot-1', 'slot-14');
+    expect(startingProjection(weakened)).toBeLessThan(startingProjection(initialRoster));
+    expect(optimizeLineup(weakened)).toEqual(initialRoster);
+  });
+  it('gives flex the best player the fixed slots did not want', () => {
+    // Cook is the strongest bench RB but Collins still outscores him, so flex
+    // keeps Collins even though both are eligible.
+    const weakened = swapPlayers(initialRoster, 'slot-6', 'slot-10');
+    expect(weakened[6].playerId).toBe('cook');
+    expect(optimizeLineup(weakened)[6].playerId).toBe('collins');
+  });
+  it('keeps untouched bench players in place and never mutates the input', () => {
+    const weakened = swapPlayers(
+      swapPlayers(initialRoster, 'slot-0', 'slot-11'),
+      'slot-3',
+      'slot-9',
+    );
+    const before = weakened.map((s) => ({ ...s }));
+    const best = optimizeLineup(weakened);
+    expect(weakened).toEqual(before);
+    expect(validRoster(best)).toBe(true);
+    expect(starterIds(best)).toEqual(starterIds(initialRoster));
+    expect(startingProjection(best)).toBeCloseTo(startingProjection(initialRoster));
+    // Cook was never promoted or demoted, so he keeps the slot he was in.
+    expect(best[10].playerId).toBe('cook');
+  });
+  it('is idempotent', () => {
+    const best = optimizeLineup(swapPlayers(initialRoster, 'slot-1', 'slot-14'));
+    expect(optimizeLineup(best)).toBe(best);
   });
 });

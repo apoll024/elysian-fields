@@ -29,6 +29,63 @@ export function swapPlayers(roster: RosterSlot[], from: string, to: string): Ros
         : s,
   );
 }
+export function startingProjection(roster: RosterSlot[]) {
+  return roster.reduce(
+    (total, slot) => (slot.label === 'BN' ? total : total + playerById[slot.playerId].projection),
+    0,
+  );
+}
+export function optimizeLineup(roster: RosterSlot[]): RosterSlot[] {
+  const order = new Map(roster.map((slot, i) => [slot.playerId, i]));
+  // Highest projection first. Ties fall back to the current slot order so a
+  // lineup that is already optimal keeps every player exactly where it is.
+  const ranked = roster
+    .map((slot) => slot.playerId)
+    .sort(
+      (a, b) =>
+        playerById[b].projection - playerById[a].projection || order.get(a)! - order.get(b)!,
+    );
+  const used = new Set<string>();
+  const claim = (label: Slot) => {
+    const id = ranked.find((c) => !used.has(c) && eligible(playerById[c], label));
+    if (id) used.add(id);
+    return id;
+  };
+  const starters = new Map<string, string>();
+  // Single-position slots go first because they never compete with each other,
+  // so filling each with its own best player cannot cost more than it gains.
+  // FLEX then takes the best player none of them wanted, which is the most any
+  // legal lineup can score there.
+  for (const slot of roster)
+    if (slot.label !== 'BN' && slot.label !== 'FLEX') {
+      const id = claim(slot.label);
+      if (id) starters.set(slot.id, id);
+    }
+  for (const slot of roster)
+    if (slot.label === 'FLEX') {
+      const id = claim('FLEX');
+      if (id) starters.set(slot.id, id);
+    }
+  // Bench players who were not promoted keep their own spot; whoever leaves the
+  // starting lineup fills the bench slots that just opened up. Those two counts
+  // always match, so no player is dropped or duplicated.
+  const demoted = roster
+    .filter((slot) => slot.label !== 'BN' && !used.has(slot.playerId))
+    .map((slot) => slot.playerId);
+  let next = 0;
+  const lineup = roster.map((slot) => {
+    const id =
+      slot.label === 'BN'
+        ? used.has(slot.playerId)
+          ? demoted[next++]
+          : slot.playerId
+        : starters.get(slot.id);
+    return id === undefined || id === slot.playerId ? slot : { ...slot, playerId: id };
+  });
+  // Same convention as swapPlayers: an unchanged lineup returns the input, so
+  // callers can treat identity as "there is nothing to improve".
+  return lineup.some((slot, i) => slot.playerId !== roster[i].playerId) ? lineup : roster;
+}
 export function validRoster(value: unknown): value is RosterSlot[] {
   if (!Array.isArray(value) || value.length !== initialRoster.length) return false;
   const ids = new Set<string>();

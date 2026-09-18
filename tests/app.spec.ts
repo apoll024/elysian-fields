@@ -118,6 +118,9 @@ test('mobile has no horizontal overflow and supports tap swaps', async ({ page }
     .click();
   await page.getByRole('button', { name: 'Swap with James Cook', exact: true }).click();
   await expect(page.getByTestId('slot-1')).toContainText('James Cook');
+  // The toolbar gained a control, so the narrow layout is worth re-checking.
+  await page.getByRole('button', { name: 'Best lineup', exact: true }).click();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
   await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
   await page.getByRole('button', { name: 'Players', exact: true }).click();
   await expect(page.getByPlaceholder('Search players or teams…')).toBeVisible();
@@ -141,7 +144,8 @@ test('touch dragging lifts after a hold and snaps to an eligible slot', async ({
     hasTouch: true,
   });
   const page = await context.newPage();
-  await page.goto('http://127.0.0.1:5173');
+  // Use the configured baseURL rather than a hardcoded port.
+  await page.goto('/');
   const handle = await page
     .getByRole('button', { name: 'Move Saquon Barkley', exact: true })
     .boundingBox();
@@ -177,4 +181,23 @@ test('storage failure leaves lineup editing available and reports unsaved state'
     .click();
   await page.getByRole('button', { name: 'Swap with Jahmyr Gibbs', exact: true }).click();
   await expect(page.getByTestId('slot-1')).toContainText('Jahmyr Gibbs');
+});
+
+test('best lineup fixes a weakened roster and undo puts it back', async ({ page }) => {
+  await page.goto('/');
+  // The demo roster starts optimal, so the first press should change nothing.
+  await page.getByRole('button', { name: 'Best lineup', exact: true }).click();
+  // Scoped to the toast because dnd-kit also renders a live region.
+  await expect(page.locator('.toast')).toContainText('already the best');
+  await expect(page.getByTestId('slot-1')).toContainText('Saquon Barkley');
+  await page
+    .getByRole('button', { name: 'Choose position for Saquon Barkley', exact: true })
+    .click();
+  await page.getByRole('button', { name: 'Swap with Brian Robinson Jr.', exact: true }).click();
+  await expect(page.getByTestId('slot-1')).toContainText('Brian Robinson Jr.');
+  await page.getByRole('button', { name: 'Best lineup', exact: true }).click();
+  await expect(page.getByTestId('slot-1')).toContainText('Saquon Barkley');
+  await expect(page.getByTestId('slot-14')).toContainText('Brian Robinson Jr.');
+  await page.getByRole('button', { name: 'Undo last lineup change', exact: true }).click();
+  await expect(page.getByTestId('slot-1')).toContainText('Brian Robinson Jr.');
 });
