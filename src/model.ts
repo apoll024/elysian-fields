@@ -82,6 +82,10 @@ export function optimizeLineup(roster: RosterSlot[]): RosterSlot[] {
         : starters.get(slot.id);
     return id === undefined || id === slot.playerId ? slot : { ...slot, playerId: id };
   });
+  // Players in equivalent starting slots may have been deliberately reordered.
+  // A different arrangement is not an improvement when the projected total is
+  // unchanged, so preserve it and avoid a misleading +0.0 activity entry.
+  if (startingProjection(lineup) <= startingProjection(roster) + 1e-9) return roster;
   // Same convention as swapPlayers: an unchanged lineup returns the input, so
   // callers can treat identity as "there is nothing to improve".
   return lineup.some((slot, i) => slot.playerId !== roster[i].playerId) ? lineup : roster;

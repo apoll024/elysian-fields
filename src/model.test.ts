@@ -67,6 +67,12 @@ describe('best lineup', () => {
   it('returns the same roster when nothing can be improved', () => {
     expect(optimizeLineup(initialRoster)).toBe(initialRoster);
   });
+  it('preserves a deliberate reorder of equivalent starting slots', () => {
+    const reordered = swapPlayers(initialRoster, 'slot-1', 'slot-2');
+    expect(reordered).not.toBe(initialRoster);
+    expect(startingProjection(reordered)).toBeCloseTo(startingProjection(initialRoster));
+    expect(optimizeLineup(reordered)).toBe(reordered);
+  });
   it('promotes a benched starter and demotes the player who took the slot', () => {
     const weakened = swapPlayers(initialRoster, 'slot-1', 'slot-14');
     expect(startingProjection(weakened)).toBeLessThan(startingProjection(initialRoster));
