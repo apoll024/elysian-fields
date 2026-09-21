@@ -70,6 +70,9 @@ import {
   type Settings,
 } from './model';
 
+import Entrance from './Entrance';
+import PlayerName from './PlayerName';
+
 type Page = 'team' | 'matchup' | 'players' | 'league' | 'activity';
 const navigation: { id: Page; label: string; icon: typeof Users }[] = [
   { id: 'team', label: 'My team', icon: LayoutDashboard },
@@ -253,7 +256,7 @@ function PlayerRow({
         <Avatar player={p} />
         <span>
           <strong>
-            {p.name}
+            <PlayerName player={p} />
             {p.note && (
               <i className="injury" title={p.note}>
                 Q
@@ -289,6 +292,21 @@ function PlayerRow({
   );
 }
 export default function App() {
+  const [entered, setEntered] = useState(() => {
+    try {
+      return sessionStorage.getItem('elysian-fields:entered') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  function returnToGates() {
+    try {
+      sessionStorage.removeItem('elysian-fields:entered');
+    } catch {
+      /* The entrance remains available when storage is blocked. */
+    }
+    setEntered(false);
+  }
   const [profile, setProfile] = useState(() => {
     try {
       return localStorage.getItem('elysian-fields:profile') === 'guest' ? 'guest' : 'joel';
@@ -304,14 +322,38 @@ export default function App() {
     }
     setProfile(next);
   }
-  return <Workspace key={profile} profile={profile} changeProfile={changeProfile} />;
+  if (!entered) {
+    return (
+      <Entrance
+        onEnter={(next) => {
+          changeProfile(next);
+          try {
+            sessionStorage.setItem('elysian-fields:entered', 'true');
+          } catch {
+            /* Continue in memory when browser storage is unavailable. */
+          }
+          setEntered(true);
+        }}
+      />
+    );
+  }
+  return (
+    <Workspace
+      key={profile}
+      profile={profile}
+      changeProfile={changeProfile}
+      returnToGates={returnToGates}
+    />
+  );
 }
 function Workspace({
   profile,
   changeProfile,
+  returnToGates,
 }: {
   profile: string;
   changeProfile: (p: string) => void;
+  returnToGates: () => void;
 }) {
   const [state, setState] = useState<ProfileState>(() => loadProfile(profile));
   const { roster, settings, watchlist, activity } = state;
@@ -610,7 +652,7 @@ function Workspace({
             <div>
               <div className="eyebrow">
                 {page === 'team'
-                  ? 'WELCOME TO THE FIELDS'
+                  ? 'YOUR PLACE ON OLYMPUS'
                   : page === 'matchup'
                     ? 'EVERY POINT COUNTS'
                     : page === 'players'
@@ -621,7 +663,7 @@ function Workspace({
               </div>
               <h1>
                 {page === 'team'
-                  ? 'Your team. Your field.'
+                  ? 'Where legends take the field.'
                   : page === 'matchup'
                     ? 'This week’s matchup.'
                     : page === 'players'
@@ -825,7 +867,9 @@ function Workspace({
                           <GripVertical size={17} />
                           <Avatar player={activePlayer} />
                           <div>
-                            <strong>{activePlayer.name}</strong>
+                            <strong>
+                              <PlayerName player={activePlayer} />
+                            </strong>
                             <small>
                               {activePlayer.position} · {activePlayer.team}
                             </small>
@@ -996,22 +1040,22 @@ function Workspace({
                 .map((s, i) => {
                   const p = playerById[s.playerId];
                   const opponents = [
-                    ['Lamar Jackson', 25.2],
-                    ['Bijan Robinson', 20.1],
-                    ['De’Von Achane', 18.2],
-                    ['Justin Jefferson', 20.7],
-                    ['Amon-Ra St. Brown', 17.2],
-                    ['George Kittle', 13.8],
-                    ['Drake London', 14.5],
-                    ['Jake Bates', 7.2],
-                    ['Pittsburgh Steelers', 6.7],
+                    ['Lamar Jackson', 25.2, 'QB'],
+                    ['Bijan Robinson', 20.1, 'RB'],
+                    ['De’Von Achane', 18.2, 'RB'],
+                    ['Justin Jefferson', 20.7, 'WR'],
+                    ['Amon-Ra St. Brown', 17.2, 'WR'],
+                    ['George Kittle', 13.8, 'TE'],
+                    ['Drake London', 14.5, 'WR'],
+                    ['Jake Bates', 7.2, 'K'],
+                    ['Pittsburgh Steelers', 6.7, 'DEF'],
                   ] as const;
                   return (
                     <div className="head-to-head" key={s.id}>
                       <button onClick={() => setDetail(p)}>
                         <Avatar player={p} small />
                         <span>
-                          {p.name}
+                          <PlayerName player={p} />
                           <small>{p.team}</small>
                         </span>
                       </button>
@@ -1022,7 +1066,9 @@ function Workspace({
                         {s.label}
                       </span>
                       <strong>{fmt(opponents[i][1])}</strong>
-                      <span className="opposing-player">{opponents[i][0]}</span>
+                      <span className="opposing-player">
+                        <PlayerName player={{ name: opponents[i][0], position: opponents[i][2] }} />
+                      </span>
                     </div>
                   );
                 })}
@@ -1090,7 +1136,9 @@ function Workspace({
                   <button className="player-identity" onClick={() => setDetail(p)}>
                     <Avatar player={p} />
                     <span>
-                      <strong>{p.name}</strong>
+                      <strong>
+                        <PlayerName player={p} />
+                      </strong>
                       <small>
                         {p.team}
                         <span>·</span>
@@ -1418,6 +1466,11 @@ function Workspace({
             Profiles are stored in this browser. Account sign-in and cross-device sync will be added
             when the backend is connected.
           </p>
+          <div className="profile-exit">
+            <button className="button secondary full" onClick={returnToGates}>
+              Return to the gates <ArrowRight size={16} />
+            </button>
+          </div>
         </Modal>
       )}
       {modal === 'help' && (
@@ -1487,7 +1540,9 @@ function Workspace({
             <div className="detail-identity">
               <Avatar player={detail} />
               <div>
-                <h2>{detail.name}</h2>
+                <h2>
+                  <PlayerName player={detail} />
+                </h2>
                 <p>
                   {detail.team} · {detail.position} · #{detail.number}
                 </p>
