@@ -1,6 +1,6 @@
 # Elysian Fields
 
-**More game. Less noise.** A responsive fantasy football design prototype with a dark clubhouse theme, tactile roster management, and personal layouts.
+**Where legends take the field.** A responsive fantasy football design prototype with an Olympus entrance, a light marble and gold default theme, tactile roster management, and personal layouts.
 
 ## Run locally
 
@@ -18,7 +18,9 @@ Open http://127.0.0.1:5173. Build production assets with `npm run build` and ins
 - Roster swaps with mouse, touch, keyboard, or two clicks. Both players must fit their destination positions. Nearby valid targets snap into place; invalid drops and Escape cancel safely.
 - Undo for the last 20 lineup changes in the current session, with a persistent activity feed.
 - Projected totals update immediately with the lineup. Matchup comparison, standings, searchable player pool, player details, and saved watchlists.
-- Three themes, three accent colors, two densities, a collapsible context rail, optional synthesized snap sounds, and reduced-motion support.
+- An illustrated Elysian Gates entrance with Joel and Guest demo profile selection. Entering is remembered for the browser tab; return via Your profile → Return to the gates.
+- Position-colored player names across the roster, bench, FLEX, drag overlay, player pool, matchup, and details. QB is pink; RB green; WR blue; TE ochre; K violet; DEF slate.
+- Three themes (marble daylight by default), three accent colors, two densities, a collapsible context rail, optional synthesized snap sounds, and reduced-motion support.
 - Independent Joel and Guest demo profiles. Rosters, names, preferences, activity, and watchlists persist in browser storage.
 - Responsive layouts, visible keyboard focus, native modal focus management, and drag announcements.
 
@@ -41,7 +43,7 @@ Local profiles demonstrate personalization; they are not authenticated accounts.
 
 Future API keys belong in a server-side integration. Do not place credentials in `VITE_*` variables, browser code, or committed files. The future backend should own account authorization, roster locks, transactions, and authoritative scoring; client projections remain a presentation layer.
 
-Fonts are bundled locally. The built frontend makes no third-party requests.
+Fonts and entrance artwork are bundled locally. The built frontend makes no third-party requests. Existing saved theme choices are respected; new profiles default to marble daylight with a gold accent. See [artwork notes](docs/olympus-artwork.md) for the generated asset and prompt.
 
 ## Checks
 
