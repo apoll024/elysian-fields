@@ -1,5 +1,9 @@
 import { test, expect } from '@playwright/test';
 
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem('elysian-fields:entered', 'true'));
+});
+
 test('click swaps validate both positions, persist, and support undo', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Choose position for Josh Allen', exact: true }).click();
@@ -64,10 +68,10 @@ test('settings persist per profile; dialogs trap focus and Escape closes', async
   await page.goto('/');
   await page.getByRole('button', { name: 'Customize', exact: true }).click();
   await page.getByRole('button', { name: 'Marble day', exact: true }).click();
-  await expect(page.locator('html')).toHaveCSS('background-color', 'rgb(245, 245, 240)');
+  await expect(page.locator('html')).toHaveCSS('background-color', 'rgb(247, 244, 236)');
   await expect(page.getByRole('heading', { name: 'Sunday Scaries', exact: true })).toHaveCSS(
     'color',
-    'rgb(38, 49, 38)',
+    'rgb(48, 60, 70)',
   );
   await page.getByRole('button', { name: 'Oracle dusk', exact: true }).click();
   await page.getByRole('button', { name: 'Oracle', exact: true }).click();
@@ -83,7 +87,7 @@ test('settings persist per profile; dialogs trap focus and Escape closes', async
   await page
     .getByRole('button', { name: 'G Guest profile Local demo profile', exact: true })
     .click();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await expect(page.getByRole('heading', { name: 'Sunday Scaries', exact: true })).toBeVisible();
 });
 
@@ -134,14 +138,18 @@ test('corrupt persisted data recovers and reduced motion is honored', async ({ p
   await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
 });
 
-test('touch dragging lifts after a hold and snaps to an eligible slot', async ({ browser }) => {
+test('touch dragging lifts after a hold and snaps to an eligible slot', async ({
+  browser,
+  baseURL,
+}) => {
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
     isMobile: true,
     hasTouch: true,
   });
+  await context.addInitScript(() => sessionStorage.setItem('elysian-fields:entered', 'true'));
   const page = await context.newPage();
-  await page.goto('http://127.0.0.1:5173');
+  await page.goto(baseURL!);
   const handle = await page
     .getByRole('button', { name: 'Move Saquon Barkley', exact: true })
     .boundingBox();

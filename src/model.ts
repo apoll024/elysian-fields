@@ -55,8 +55,8 @@ export type Settings = {
   teamName: string;
 };
 export const defaultSettings: Settings = {
-  theme: 'dark',
-  accent: 'mint',
+  theme: 'light',
+  accent: 'amber',
   density: 'comfortable',
   sound: false,
   motion: true,
@@ -95,8 +95,10 @@ export function loadProfile(profile: string): ProfileState {
     return {
       roster: raw.roster,
       settings: {
-        theme: ['dark', 'dusk', 'light'].includes(s.theme) ? s.theme : 'dark',
-        accent: ['mint', 'lavender', 'amber'].includes(s.accent) ? s.accent : 'mint',
+        theme: ['dark', 'dusk', 'light'].includes(s.theme) ? s.theme : defaultSettings.theme,
+        accent: ['mint', 'lavender', 'amber'].includes(s.accent)
+          ? s.accent
+          : defaultSettings.accent,
         density: s.density === 'compact' ? 'compact' : 'comfortable',
         sound: s.sound === true,
         motion: s.motion !== false,
