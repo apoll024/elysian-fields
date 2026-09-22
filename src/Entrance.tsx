@@ -1,20 +1,33 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { ArrowRight, Crown, Shield, Sparkles } from 'lucide-react';
 
-export default function Entrance({ onEnter }: { onEnter: (profile: string) => void }) {
-  const [profile, setProfile] = useState('joel');
+const accounts = ['Ryan', 'Gary', 'Rick', 'Reo', 'Kyle', 'Jeff', 'Joel', 'Kunal', 'Marko', 'Jonny'];
 
+export default function Entrance({
+  onEnter,
+  error,
+  busy,
+}: {
+  onEnter: (username: string, password: string) => Promise<void>;
+  error: string;
+  busy: boolean;
+}) {
+  const [username, setUsername] = useState('Ryan');
+  const [password, setPassword] = useState('');
   useEffect(() => {
     document.documentElement.dataset.theme = 'light';
     document.documentElement.dataset.accent = 'amber';
   }, []);
-
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    void onEnter(username, password);
+  }
   return (
     <main className="entrance" aria-labelledby="entrance-title">
       <img
         className="entrance-art"
         src="/olympus-gates.svg"
-        alt="A marble statue of Commissioner Thundercock stands over a shattered purple Yahoo logo beside the golden Elysian Gates, opening onto sunlit clouds."
+        alt="A marble statue beside the gilded Elysian Gates, opening onto sunlit clouds."
         fetchPriority="high"
         width="1672"
         height="941"
@@ -36,27 +49,39 @@ export default function Entrance({ onEnter }: { onEnter: (profile: string) => vo
         <p className="entrance-description">
           The gates are open. Take your place among the legends.
         </p>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            onEnter(profile);
-          }}
-        >
-          <label htmlFor="entrance-profile">CHOOSE YOUR PROFILE</label>
+        <form onSubmit={submit}>
+          <label htmlFor="entrance-profile">ACCOUNT</label>
           <select
             id="entrance-profile"
-            value={profile}
-            onChange={(event) => setProfile(event.target.value)}
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
           >
-            <option value="joel">Joel Shelton</option>
-            <option value="guest">Guest profile</option>
+            {accounts.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
           </select>
-          <button className="entrance-enter" type="submit">
-            Enter the fields <ArrowRight size={18} />
+          <label htmlFor="entrance-password">PASSWORD</label>
+          <input
+            id="entrance-password"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+          {error && (
+            <p className="entrance-error" role="alert">
+              {error}
+            </p>
+          )}
+          <button className="entrance-enter" type="submit" disabled={busy}>
+            {busy ? 'Opening the gates…' : 'Enter the fields'} <ArrowRight size={18} />
           </button>
         </form>
         <p className="entrance-note">
-          <Shield size={14} /> Local demo · No password needed
+          <Shield size={14} /> Your roster follows your account
         </p>
       </section>
     </main>

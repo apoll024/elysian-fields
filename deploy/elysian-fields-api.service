@@ -1,0 +1,23 @@
+[Unit]
+Description=Elysian Fields account and waiver API
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/elysian-fields
+Environment=ELYSIAN_DB_PATH=/var/lib/elysian-fields/league.db
+ExecStart=/usr/bin/python3 /opt/elysian-fields/server/app.py
+StateDirectory=elysian-fields
+StateDirectoryMode=0700
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/elysian-fields
+
+[Install]
+WantedBy=multi-user.target

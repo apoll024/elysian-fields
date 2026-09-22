@@ -7,6 +7,10 @@ dist/
 playwright-report/
 test-results/
 *.tsbuildinfo
+server/*.db
+server/*.db-*
+__pycache__/
+*.pyc
 *.pem
 *.key
 .DS_Store

@@ -1,66 +1,51 @@
 # Elysian Fields
 
-**Where legends take the field.** A responsive fantasy football design prototype with an Olympus entrance, a light marble and gold default theme, tactile roster management, and personal layouts.
+An Olympus-themed fantasy football league app. Ten password-protected accounts and their Week 2, 2026 rosters come from the supplied Yahoo Starting Rosters HTML export. Ryan is the sole commissioner. The API stores teams, sessions, league settings, and waiver claims in SQLite; the frontend no longer depends on browser-local demo profiles.
 
-## Run locally
+## Accounts and rosters
 
-Node.js 24 LTS is recommended.
+| Account             | Team                            |
+| ------------------- | ------------------------------- |
+| Ryan (commissioner) | balls deep                      |
+| Gary                | Dumpster phoenix                |
+| Rick                | Happy Gollodays!                |
+| Reo                 | Garbage Day                     |
+| Kyle                | Joyzee Balwurs                  |
+| Jeff                | Little lebowski urban acheivers |
+| Joel                | Str8UpLazy                      |
+| Kunal               | Fumbling Drunkards              |
+| Marko               | 1.21 Gigawatts                  |
+| Jonny               | Caleb Me Maybe                  |
 
-```sh
-npm ci
-npm run dev
-```
+The source export has 158 player entries, including bench and IR. `data/league-seed.json` preserves its lineup slots and Yahoo player IDs. Supplied team names take precedence where they differ from Yahoo's spelling. Recreate the seed from a saved export with `python scripts/import_yahoo_rosters.py INPUT.html data/league-seed.json` after installing `beautifulsoup4`.
 
-Open http://127.0.0.1:5173. Build production assets with `npm run build` and inspect them with `npm run preview`.
+## Local setup
 
-## What works
-
-- Roster swaps with mouse, touch, keyboard, or two clicks. Both players must fit their destination positions. Nearby valid targets snap into place; invalid drops and Escape cancel safely.
-- Undo for the last 20 lineup changes in the current session, with a persistent activity feed.
-- Projected totals update immediately with the lineup. Matchup comparison, standings, searchable player pool, player details, and saved watchlists.
-- An illustrated Elysian Gates entrance with Joel and Guest demo profile selection. Entering is remembered for the browser tab; return via Your profile → Return to the gates.
-- Position-colored player names across the roster, bench, FLEX, drag overlay, player pool, matchup, and details. QB is pink; RB green; WR blue; TE ochre; K violet; DEF slate.
-- Three themes (marble daylight by default), three accent colors, two densities, a collapsible context rail, optional synthesized snap sounds, and reduced-motion support.
-- Independent Joel and Guest demo profiles. Rosters, names, preferences, activity, and watchlists persist in browser storage.
-- Responsive layouts, visible keyboard focus, native modal focus management, and drag announcements.
-
-All sports data is **illustrative**, including player/team associations, schedules, records, projections, and player status. The demo week is fixed at Week 9. This prototype has no AI features.
-
-## Design preview boundaries
-
-Local profiles demonstrate personalization; they are not authenticated accounts. Browser data does not sync between devices. Live statistics, transactions and waivers, trades, league administration, real accounts, server persistence, and scoring integrations are not implemented yet. The player pool currently supports discovery and watchlists.
-
-## Structure
-
-| File                | Responsibility                                                                 |
-| ------------------- | ------------------------------------------------------------------------------ |
-| `src/App.tsx`       | Views, accessible dialogs, roster interactions, and local state                |
-| `src/styles.css`    | Theme tokens, responsive layouts, and motion                                   |
-| `src/data.ts`       | Typed demo fixtures; replace via a provider adapter when paid data is selected |
-| `src/model.ts`      | Eligibility, immutable swaps, persisted-state validation, and optional audio   |
-| `src/model.test.ts` | Lineup rules and corrupt-data protection                                       |
-| `tests/app.spec.ts` | Browser interaction and mobile regression checks                               |
-
-Future API keys belong in a server-side integration. Do not place credentials in `VITE_*` variables, browser code, or committed files. The future backend should own account authorization, roster locks, transactions, and authoritative scoring; client projections remain a presentation layer.
-
-Fonts and entrance artwork are bundled locally. The built frontend makes no third-party requests. Existing saved theme choices are respected; new profiles default to marble daylight with a gold accent. See [artwork notes](docs/olympus-artwork.md) for the generated asset and prompt.
-
-## Checks
-
-```sh
-npm test
-npm run build
-npx playwright install chromium
-npm run test:e2e
-```
-
-If Microsoft Edge is already installed, PowerShell can use it without a browser download:
+Python 3.9+ and Node.js 24 LTS are recommended.
 
 ```powershell
-$env:PLAYWRIGHT_CHANNEL = 'msedge'
-npm run test:e2e
+npm ci
+$env:ELYSIAN_DB_PATH = "$PWD/server/league.db"
+$env:ELYSIAN_SEED_PASSWORD = "123"
+python server/app.py --seed
+Remove-Item Env:ELYSIAN_SEED_PASSWORD
+python server/app.py
 ```
 
-## OCI deployment
+In another terminal run `npm run dev`, then open http://127.0.0.1:5173. Vite proxies `/api` to Python on localhost port 8765. The initial password is `123` for every account; password hashes, not plaintext, are stored in SQLite. The database is ignored by Git. Seeding refuses to overwrite an existing database.
 
-See [docs/oci-deployment.md](docs/oci-deployment.md). Production is a native Caddy systemd service serving versioned static releases. SSH keys and OCI connection details are not part of the repository.
+## Team and commissioner actions
+
+Managers can view their own roster, change their team name, swap eligible lineup slots, and submit or cancel waiver claims. Each change is saved by the server and checked against roster membership and position eligibility. A failed save leaves the current roster visible with an error message.
+
+Ryan alone can open other teams for editing, change league settings, add players to the free-agent pool, and process waiver claims on demand. These restrictions are enforced by API checks in addition to the UI. A shared password means someone who signs in _as Ryan_ can use commissioner controls; use a unique Ryan password if that access must be exclusive to him.
+
+Waivers use rolling priority, initially ordered as the accounts above. Claims run daily after 3:00 a.m. America/Los_Angeles. A successful claim replaces the nominated drop player, moves the claimant to the end of the priority list, and holds the dropped player for 24 hours. The supplied export contains rosters but no free-agent list; Ryan can add free agents in the waiver view.
+
+This snapshot does not include live scores, projections, or a Yahoo sync. The league setting labels are stored but scoring calculations and game-time lineup locks are not yet enforced.
+
+## Deployment
+
+See [OCI deployment notes](docs/oci-deployment.md) for the Python service, SQLite storage, Caddy API proxy, and static frontend release. The server deployment requires both the API and the frontend; publishing only `dist/` will leave the login unable to connect.
+
+The generated Olympus entrance artwork is bundled locally. Its prompt and packaging are described in [artwork notes](docs/olympus-artwork.md).

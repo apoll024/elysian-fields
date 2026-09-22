@@ -12,6 +12,10 @@ elysian.170.9.6.93.sslip.io {
     respond "ok" 200
   }
 
+  handle /api/* {
+    reverse_proxy 127.0.0.1:8765
+  }
+
   handle {
     root * /srv/elysian-fields/current
 

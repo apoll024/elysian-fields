@@ -1,52 +1,36 @@
-# Deploy Elysian Fields to OCI
+# OCI deployment
 
-The app is a static frontend at this stage. It runs natively on the OCI compute VM with Caddy managed by systemd. No database or paid API credentials are required for the design preview.
+The production app now has two parts: a static Vite frontend and a Python account/roster API. Caddy serves the frontend from `/srv/elysian-fields/current` and proxies `/api/*` to `127.0.0.1:8765`. The API database is persistent at `/var/lib/elysian-fields/league.db`; it must survive static release changes.
 
-## Information needed for the actual deployment
+## First-time API provisioning
 
-- VM IP or hostname, SSH username, and the local path to the SSH key.
-- Instance operating system and CPU architecture.
-- Desired domain, if available, and whether an existing reverse proxy is in use.
+1. Copy `server/app.py` and `data/league-seed.json` to `/opt/elysian-fields/server/app.py` and `/opt/elysian-fields/data/league-seed.json`. Keep the tree root-owned and readable by `www-data`.
+2. Install `deploy/elysian-fields-api.service` as `/etc/systemd/system/elysian-fields-api.service`. Create `/var/lib/elysian-fields` owned by `www-data` with mode 0700.
+3. Set the initial password to the user-requested value `123` only for the one-time seed command. Do not commit a database or password environment file. For example, run:
 
-Use the private key from its local path; never commit it or paste its contents into the app.
+   ```sh
+   sudo -u www-data env ELYSIAN_DB_PATH=/var/lib/elysian-fields/league.db ELYSIAN_SEED_PASSWORD=123 python3 /opt/elysian-fields/server/app.py --seed
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now elysian-fields-api
+   curl --fail http://127.0.0.1:8765/api/health
+   ```
 
-## Build and publish
+The seed command refuses to replace an existing database. Preserve the SQLite file during future updates. Run the service as `www-data` with no public listening port.
 
-Build on a trusted workstation and copy only the generated static files to a versioned release directory:
+## Frontend and Caddy
 
-```powershell
-npm ci
-npm run build
-tar.exe -czf elysian-fields-dist.tar.gz -C dist .
-scp -i C:\path\to\key elysian-fields-dist.tar.gz ubuntu@INSTANCE_IP:/tmp/
-```
+Build on a workstation with `npm ci` and `npm run build`. Upload only `dist/` into a new `/srv/elysian-fields/releases/RELEASE_ID`, then point `current` at the new release after extraction. Keep the previous release for rollback.
 
-On the VM, extract the build and switch the `current` symlink only after extraction succeeds:
+Update `/etc/caddy/Caddyfile` from `deploy/Caddyfile` so `/api/*` reaches the Python service. Validate with `sudo caddy validate --config /etc/caddy/Caddyfile` before reloading Caddy. The frontend's `connect-src 'self'` policy permits only its same-origin API. The API itself binds to loopback, and Caddy provides HTTPS.
 
-```sh
-sudo mkdir -p /srv/elysian-fields/releases/RELEASE_ID
-sudo tar -xzf /tmp/elysian-fields-dist.tar.gz -C /srv/elysian-fields/releases/RELEASE_ID
-sudo chown -R root:root /srv/elysian-fields/releases/RELEASE_ID
-sudo find /srv/elysian-fields/releases/RELEASE_ID -type d -exec chmod 755 {} \;
-sudo find /srv/elysian-fields/releases/RELEASE_ID -type f -exec chmod 644 {} \;
-sudo ln -sfn /srv/elysian-fields/releases/RELEASE_ID /srv/elysian-fields/current
-sudo systemctl reload caddy
-```
+Roll back the static site by pointing `current` to the previous release and reloading Caddy. Rolling back API code may require a compatible database backup; make a copy of `league.db` before API upgrades.
 
-The native Caddy configuration lives at `/etc/caddy/Caddyfile` and serves `/srv/elysian-fields/current`. Validate it with `sudo caddy validate --config /etc/caddy/Caddyfile` before reloading.
+## Verification after deployment
 
-Ports 80 and 443 must be permitted in the OCI network security rules and host firewall. Caddy obtains and renews TLS certificates automatically when the configured public hostname resolves to the VM. Real account authentication should launch behind HTTPS.
+- `/health` returns `ok`; `/api/health` returns JSON `{"status":"ok"}`.
+- The entrance asks for an account and password.
+- Ryan sees commissioner settings and team-edit controls; another account does not.
+- A roster swap saves and remains visible without refreshing.
+- Waiver claims and priorities persist across sessions.
 
-## Roll back
-
-```sh
-sudo ln -sfn /srv/elysian-fields/releases/PREVIOUS_RELEASE /srv/elysian-fields/current
-sudo systemctl reload caddy
-```
-
-## Runtime
-
-- Caddy runs as its dedicated system user under systemd.
-- Static assets have long caching; the entry document is revalidated.
-- The web root is owned by root and is read-only to Caddy.
-- Current state lives in each visitor's browser. Container restarts do not delete browser state; clearing browser storage does.
+The saved Yahoo page is an input to the import script, not a runtime dependency. Its third-party scripts are never executed.

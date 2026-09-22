@@ -1,0 +1,478 @@
+.league-app {
+  min-height: 100svh;
+  background: #f7f4ec;
+  color: #303c46;
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+}
+.league-sidebar {
+  min-height: 100svh;
+  background: #fcfaf4;
+  border-right: 1px solid #d8cdb6;
+  display: flex;
+  flex-direction: column;
+  padding: 29px 18px 0;
+}
+.league-brand {
+  display: flex;
+  gap: 11px;
+  align-items: center;
+  color: #82612c;
+  font:
+    650 28px/0.84 'Cormorant Garamond Variable',
+    Georgia,
+    serif;
+  margin: 0 10px 42px;
+}
+.league-label,
+.league-eyebrow {
+  color: #8a6a32;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+}
+.league-label {
+  margin: 0 12px 9px;
+}
+.league-league-name {
+  font-size: 12px;
+  margin: 0 12px 26px;
+}
+.league-sidebar nav {
+  display: grid;
+  gap: 4px;
+}
+.league-sidebar nav button {
+  text-align: left;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 13px;
+  border-radius: 7px;
+  color: #667078;
+  font-size: 12px;
+}
+.league-sidebar nav button:hover,
+.league-sidebar nav button.current {
+  background: #eee8db;
+  color: #73511e;
+}
+.league-sidebar-bottom {
+  margin: auto -18px 0;
+  padding: 18px;
+  border-top: 1px solid #d8cdb6;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.league-avatar {
+  height: 36px;
+  width: 36px;
+  flex: 0 0 36px;
+  display: inline-grid;
+  place-items: center;
+  background: #f3eee2;
+  border: 1px solid #dcccae;
+  border-radius: 50%;
+  color: #80602c;
+  font-size: 10px;
+  font-weight: 700;
+}
+.league-sidebar-bottom > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.league-sidebar-bottom strong,
+.league-sidebar-bottom small {
+  display: block;
+}
+.league-sidebar-bottom strong {
+  font-size: 11px;
+}
+.league-sidebar-bottom small {
+  color: #667078;
+  font-size: 9px;
+  margin-top: 3px;
+}
+.league-logout {
+  color: #667078;
+  padding: 7px;
+}
+.league-main {
+  min-width: 0;
+}
+.league-topbar {
+  height: 72px;
+  background: #fcfaf4;
+  border-bottom: 1px solid #d8cdb6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 36px;
+  color: #667078;
+  font-size: 11px;
+}
+.league-topbar span {
+  display: inline-flex;
+  gap: 12px;
+  align-items: center;
+}
+.league-content {
+  max-width: 1280px;
+  min-height: calc(100svh - 72px);
+  margin: auto;
+  padding: 42px 36px 75px;
+  background:
+    radial-gradient(ellipse 220px 55px at 95% 5%, #ffffffd9 25%, #fff0 78%),
+    radial-gradient(ellipse 200px 55px at 68% 4%, #ffffffb8 20%, #fff0 80%),
+    linear-gradient(#e4edf0 0, #f7f4ec 210px);
+}
+.league-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+.league-heading h1 {
+  font-family: 'Cormorant Garamond Variable', Georgia, serif;
+  font-size: clamp(36px, 4vw, 55px);
+  font-weight: 600;
+  line-height: 1;
+  margin: 10px 0;
+}
+.league-heading p {
+  font-size: 12px;
+  max-width: 680px;
+  line-height: 1.7;
+}
+.league-card {
+  background: #fffdf8;
+  border: 1px solid #d8cdb6;
+  border-radius: 10px;
+  box-shadow: 0 8px 28px #51452f0a;
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+.league-card-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 22px;
+  border-bottom: 1px solid #ebe4d6;
+}
+.league-card-title h2 {
+  font:
+    650 22px 'Cormorant Garamond Variable',
+    Georgia,
+    serif;
+}
+.league-card-title > span {
+  font-size: 10px;
+  color: #667078;
+}
+.league-player-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  padding: 12px 22px;
+  border-top: 1px solid #ebe4d6;
+  min-height: 61px;
+}
+.league-player-row:first-of-type {
+  border-top: 0;
+}
+.league-player-row:hover,
+.league-player-row.selected {
+  background: #f5efe2;
+}
+.league-player-row.selected {
+  box-shadow: inset 3px 0 #96702f;
+}
+.league-slot {
+  min-width: 49px;
+  display: inline-block;
+  color: #71582f;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.5px;
+}
+.league-player {
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+.league-player strong,
+.league-player small {
+  display: block;
+}
+.league-player strong {
+  font-size: 13px;
+}
+.league-player small {
+  font-size: 10px;
+  color: #667078;
+  margin-top: 3px;
+}
+.league-player-row > svg {
+  color: #8b846e;
+}
+.league-team-editor {
+  padding: 18px 22px;
+  display: flex;
+  align-items: end;
+  gap: 12px;
+}
+.league-team-editor > div {
+  flex: 1;
+}
+.league-app label,
+.entrance label {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #78633c;
+}
+.league-app input,
+.league-app select,
+.entrance input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #d8cbb0;
+  border-radius: 5px;
+  background: #fffefa;
+  color: #303c46;
+  padding: 9px 11px;
+  font-size: 13px;
+  margin-top: 7px;
+}
+.entrance input {
+  margin: 0 0 4px;
+}
+.entrance label:not(:first-child) {
+  margin-top: 14px;
+}
+.entrance-error {
+  color: #9f3341;
+  margin-top: 9px;
+  font-size: 11px;
+}
+.league-app button:focus-visible,
+.entrance input:focus-visible {
+  outline: 2px solid #866023;
+}
+.league-app button:not(.league-player-row):not(.league-sidebar nav button):not(.league-logout) {
+  font-size: 11px;
+}
+.league-team-editor > button,
+.league-settings > button,
+.league-form-grid > button,
+.league-commissioner-tools > button {
+  background: #866023;
+  color: #fffdf8;
+  border-radius: 5px;
+  padding: 12px 16px;
+  min-height: 42px;
+  white-space: nowrap;
+}
+.league-team-editor > button:hover,
+.league-settings > button:hover,
+.league-form-grid > button:hover,
+.league-commissioner-tools > button:hover {
+  background: #71501f;
+  color: #fff;
+}
+.league-team-row {
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  padding: 14px 22px;
+  border-top: 1px solid #ebe4d6;
+}
+.league-team-row > div {
+  flex: 1;
+  min-width: 0;
+}
+.league-team-row strong,
+.league-team-row small {
+  display: block;
+}
+.league-team-row strong {
+  font-size: 12px;
+}
+.league-team-row small {
+  color: #667078;
+  margin-top: 4px;
+  font-size: 10px;
+}
+.league-team-row > span:not(.league-avatar):not(.league-slot) {
+  color: #667078;
+  font-size: 10px;
+}
+.league-team-row > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #80602c;
+  padding: 7px 2px;
+}
+.league-team-row > button:hover {
+  color: #5e431f;
+}
+.league-top-logout {
+  color: #667078;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px;
+}
+.league-waiver-controls {
+  padding: 20px 22px;
+  display: grid;
+  grid-template-columns: minmax(200px, 400px) 1fr;
+  gap: 8px 18px;
+}
+.league-waiver-controls label {
+  grid-column: 1 / -1;
+}
+.league-waiver-controls select {
+  margin: 0;
+}
+.league-waiver-controls small {
+  align-self: center;
+  color: #667078;
+}
+.league-empty {
+  padding: 22px;
+  font-size: 12px;
+}
+.league-settings {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  max-width: 700px;
+}
+.league-settings > button {
+  justify-self: start;
+}
+.league-rule-note {
+  font-size: 11px;
+  margin-top: -14px;
+}
+.league-commissioner-tools {
+  padding-bottom: 22px;
+}
+.league-admin-replace .league-form-grid {
+  grid-template-columns: 1fr 1fr auto;
+}
+.league-form-grid {
+  padding: 18px 22px;
+  display: grid;
+  grid-template-columns: 1.5fr 0.7fr 0.7fr auto;
+  gap: 10px;
+  align-items: end;
+}
+.league-commissioner-tools > button {
+  margin-left: 22px;
+}
+.league-message {
+  background: #f1e8d2;
+  color: #5f4a1e;
+  padding: 12px 16px;
+  border: 1px solid #cbb47f;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 12px;
+}
+.league-message.error {
+  background: #fff1ef;
+  color: #9f3341;
+  border-color: #e5aaa5;
+}
+.league-loading {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  background: #f7f4ec;
+  font:
+    25px 'Cormorant Garamond Variable',
+    Georgia,
+    serif;
+}
+@media (max-width: 850px) {
+  .league-app {
+    display: block;
+  }
+  .league-sidebar {
+    min-height: 0;
+    padding: 14px;
+  }
+  .league-brand {
+    margin: 0 4px 14px;
+    font-size: 23px;
+  }
+  .league-label,
+  .league-league-name,
+  .league-sidebar-bottom {
+    display: none;
+  }
+  .league-sidebar nav {
+    display: flex;
+    overflow-x: auto;
+  }
+  .league-sidebar nav button {
+    white-space: nowrap;
+    padding: 10px;
+  }
+  .league-content {
+    padding: 28px 16px 60px;
+  }
+  .league-topbar {
+    padding: 0 16px;
+    height: 50px;
+  }
+}
+@media (max-width: 600px) {
+  .league-heading {
+    display: block;
+  }
+  .league-heading select {
+    margin-top: 18px;
+  }
+  .league-team-editor {
+    display: block;
+  }
+  .league-team-editor > button {
+    margin-top: 10px;
+    width: 100%;
+  }
+  .league-waiver-controls {
+    display: block;
+  }
+  .league-waiver-controls small {
+    display: block;
+    margin-top: 10px;
+  }
+  .league-team-row {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px;
+  }
+  .league-form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .league-form-grid label:first-child {
+    grid-column: 1 / -1;
+  }
+  .league-form-grid > button {
+    grid-column: 1 / -1;
+  }
+  .league-admin-replace .league-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .league-player-row {
+    padding: 12px;
+  }
+}
