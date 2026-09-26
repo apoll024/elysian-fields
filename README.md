@@ -36,7 +36,7 @@ In another terminal run `npm run dev`, then open http://127.0.0.1:5173. Vite pro
 
 ## Team and commissioner actions
 
-Managers can view their assigned roster, swap eligible lineup slots, and submit or cancel waiver claims. Team names are fixed to their imported accounts. Each roster change is saved by the server and checked against roster membership and position eligibility. A failed save leaves the current roster visible with an error message.
+Managers can view their assigned roster, drag a player's grip to swap eligible lineup slots, or tap two players to swap. Touch scrolling stays available on the player rows, and valid destination slots are highlighted. Keyboard users can pick up a grip with Space, choose a slot with Up/Down, and drop with Space or cancel with Escape. On phones, navigation stays at the bottom with safe-area spacing. Team names are fixed to their imported accounts. Each roster change is saved by the server and checked against roster membership and position eligibility. A failed save restores the previous lineup with an error message.
 
 Each account can choose a light, dusk, or dark theme, a laurel, oracle, or bronze accent, comfortable or compact rows, and reduced motion from Appearance. These display preferences are saved in that browser for the account.
 

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import {
-  ArrowLeftRight,
   ArrowRight,
   CalendarClock,
   Crown,
@@ -12,12 +11,13 @@ import {
   Users,
 } from 'lucide-react';
 import Entrance from './Entrance';
+import LeagueRoster, { canExchange } from './LeagueRoster';
 import { demoMatchups, demoProjection, lineupProjection } from './demoLeague';
 import './league.css';
 
 type Position = 'QB' | 'RB' | 'WR' | 'TE' | 'K' | 'DEF';
 type Slot = Position | 'FLEX' | 'BN' | 'IR';
-type Player = {
+export type Player = {
   playerId: string;
   name: string;
   position: Position;
@@ -103,15 +103,6 @@ async function api<T>(path: string, method = 'GET', data?: unknown): Promise<T> 
   return result;
 }
 
-function fits(player: Player, slot: Slot) {
-  return (
-    slot === 'BN' ||
-    slot === 'IR' ||
-    slot === player.position ||
-    (slot === 'FLEX' && ['RB', 'WR', 'TE'].includes(player.position))
-  );
-}
-
 function initials(name: string) {
   return name
     .split(/\s+/)
@@ -141,6 +132,11 @@ export default function LeagueApp() {
   const [notice, setNotice] = useState('');
   const [appearance, setAppearance] = useState<Appearance>(defaultAppearance);
   const [matchupWeek, setMatchupWeek] = useState(2);
+  useEffect(() => {
+    if (!notice || busy) return;
+    const timer = window.setTimeout(() => setNotice(''), 3500);
+    return () => window.clearTimeout(timer);
+  }, [notice, busy]);
 
   function updateAppearance(next: Appearance) {
     setAppearance(next);
@@ -248,9 +244,12 @@ export default function LeagueApp() {
   }
   async function saveTeam(roster: Player[]) {
     if (!team) return;
+    const previous = team;
+    setTeam({ ...team, roster });
+    setSelectedPlayer(null);
     setBusy(true);
     setError('');
-    setNotice('');
+    setNotice('Saving lineup…');
     try {
       const next = await api<Team>('/api/teams/' + encodeURIComponent(team.team.id), 'PUT', {
         roster,
@@ -267,8 +266,10 @@ export default function LeagueApp() {
           },
       );
       setSelectedPlayer(null);
-      setNotice('Team saved.');
+      setNotice('Lineup saved.');
     } catch (cause) {
+      setTeam(previous);
+      setNotice('');
       setError((cause as Error).message);
     } finally {
       setBusy(false);
@@ -278,7 +279,8 @@ export default function LeagueApp() {
     if (!team || busy) return;
     if (selectedPlayer === null) {
       setSelectedPlayer(index);
-      setNotice('Choose a second roster slot to swap.');
+      setError('');
+      setNotice('');
       return;
     }
     if (selectedPlayer === index) {
@@ -286,16 +288,21 @@ export default function LeagueApp() {
       setNotice('');
       return;
     }
+    swapRosterPlayers(selectedPlayer, index);
+  }
+  function swapRosterPlayers(from: number, to: number) {
+    if (!team || busy || from === to) return;
     const roster = [...team.roster];
-    const first = roster[selectedPlayer];
-    const second = roster[index];
-    if (!fits(first, second.slot) || !fits(second, first.slot)) {
-      setError('Those players cannot exchange positions.');
-      setSelectedPlayer(null);
+    const first = roster[from],
+      second = roster[to];
+    if (!canExchange(first, second)) {
+      setError(
+        `${first.name} and ${second.name} cannot exchange those slots. Try another slot.`,
+      );
       return;
     }
-    roster[selectedPlayer] = { ...second, slot: first.slot };
-    roster[index] = { ...first, slot: second.slot };
+    roster[from] = { ...second, slot: first.slot };
+    roster[to] = { ...first, slot: second.slot };
     void saveTeam(roster);
   }
   async function saveSettings(event: FormEvent) {
@@ -428,6 +435,8 @@ export default function LeagueApp() {
               <button
                 key={id}
                 className={view === id ? 'current' : ''}
+                aria-current={view === id ? 'page' : undefined}
+                aria-label={label}
                 onClick={() => {
                   if (id === 'roster' || id === 'waivers') setSelectedTeam(account.id);
                   setView(id);
@@ -435,7 +444,16 @@ export default function LeagueApp() {
                   setNotice('');
                 }}
               >
-                <Icon size={18} /> {label}
+                <Icon size={18} /> <span className="league-nav-label">{label}</span>
+                <span className="league-nav-short">
+                  {id === 'commissioner'
+                    ? 'Admin'
+                    : id === 'appearance'
+                      ? 'Style'
+                      : id === 'roster'
+                        ? 'Team'
+                        : label}
+                </span>
               </button>
             ))}
         </nav>
@@ -535,34 +553,19 @@ export default function LeagueApp() {
                 <p className="league-demo-note">
                   Demo projections for layout preview. No live stats feed is connected.
                 </p>
-                {team?.roster.map((player, index) => (
-                  <button
-                    key={player.playerId}
-                    className={`league-player-row ${selectedPlayer === index ? 'selected' : ''}`}
-                    onClick={() => selectRosterRow(index)}
-                    disabled={busy}
-                    aria-label={`${selectedPlayer === null ? 'Choose' : 'Swap with'} ${player.name}, ${player.slot}`}
-                  >
-                    <span className="league-slot">{player.slot}</span>
-                    <span className="league-player">
-                      <span className="league-player-primary">
-                        <strong className="player-name" data-position={player.position}>
-                          {player.name}
-                        </strong>
-                        <span
-                          className="league-projected-points"
-                          aria-label={`${demoProjection(player).toFixed(1)} demo projected points`}
-                        >
-                          {demoProjection(player).toFixed(1)} <small>proj</small>
-                        </span>
-                      </span>
-                      <small>
-                        {player.nflTeam} · {player.position}
-                      </small>
-                    </span>
-                    <ArrowLeftRight size={16} />
-                  </button>
-                ))}
+                {team && (
+                  <LeagueRoster
+                    roster={team.roster}
+                    selected={selectedPlayer}
+                    busy={busy}
+                    onSelect={selectRosterRow}
+                    onSwap={swapRosterPlayers}
+                    onCancel={() => {
+                      setSelectedPlayer(null);
+                      setError('');
+                    }}
+                  />
+                )}
                 {!team &&
                   (teamError ? (
                     <div className="league-empty" role="alert">
