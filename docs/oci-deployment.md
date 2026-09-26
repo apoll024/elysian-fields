@@ -23,6 +23,8 @@ Build on a workstation with `npm ci` and `npm run build`. Upload only `dist/` in
 
 Update `/etc/caddy/Caddyfile` from `deploy/Caddyfile` so `/api/*` reaches the Python service. Validate with `sudo caddy validate --config /etc/caddy/Caddyfile` before reloading Caddy. The frontend's `connect-src 'self'` policy permits only its same-origin API. The API itself binds to loopback, and Caddy provides HTTPS.
 
+The legacy HTTP listeners on ports 5000 and 5003 redirect to the HTTPS site. Sign-in requires HTTPS because the session cookie is Secure.
+
 Roll back the static site by pointing `current` to the previous release and reloading Caddy. Rolling back API code may require a compatible database backup; make a copy of `league.db` before API upgrades.
 
 ## Verification after deployment

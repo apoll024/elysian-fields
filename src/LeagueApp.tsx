@@ -5,11 +5,14 @@ import {
   CalendarClock,
   Crown,
   LogOut,
+  Swords,
   Settings2,
   Shield,
+  SlidersHorizontal,
   Users,
 } from 'lucide-react';
 import Entrance from './Entrance';
+import { demoMatchups, demoProjection, lineupProjection } from './demoLeague';
 import './league.css';
 
 type Position = 'QB' | 'RB' | 'WR' | 'TE' | 'K' | 'DEF';
@@ -48,13 +51,45 @@ type Claim = {
   reason: string | null;
 };
 type AvailablePlayer = Omit<Player, 'slot'>;
-type View = 'roster' | 'league' | 'waivers' | 'commissioner';
+type View = 'roster' | 'matchups' | 'league' | 'waivers' | 'appearance' | 'commissioner';
+type Appearance = {
+  theme: 'light' | 'dusk' | 'dark';
+  accent: 'mint' | 'lavender' | 'amber';
+  density: 'comfortable' | 'compact';
+  motion: boolean;
+};
+const defaultAppearance: Appearance = {
+  theme: 'light',
+  accent: 'amber',
+  density: 'comfortable',
+  motion: true,
+};
 const navigation: { id: View; label: string; icon: typeof Shield }[] = [
   { id: 'roster', label: 'My team', icon: Shield },
+  { id: 'matchups', label: 'Matchups', icon: Swords },
   { id: 'league', label: 'League', icon: Users },
   { id: 'waivers', label: 'Waivers', icon: CalendarClock },
+  { id: 'appearance', label: 'Appearance', icon: SlidersHorizontal },
   { id: 'commissioner', label: 'Commissioner', icon: Settings2 },
 ];
+
+function readAppearance(account: Account): Appearance {
+  try {
+    const saved = localStorage.getItem(`elysian-fields:appearance:${account.id}`);
+    const legacy = localStorage.getItem(`elysian-fields:v1:${account.name}`);
+    const raw = saved ? JSON.parse(saved) : legacy ? JSON.parse(legacy)?.settings : null;
+    return {
+      theme: ['light', 'dusk', 'dark'].includes(raw?.theme) ? raw.theme : defaultAppearance.theme,
+      accent: ['mint', 'lavender', 'amber'].includes(raw?.accent)
+        ? raw.accent
+        : defaultAppearance.accent,
+      density: raw?.density === 'compact' ? 'compact' : 'comfortable',
+      motion: raw?.motion !== false,
+    };
+  } catch {
+    return defaultAppearance;
+  }
+}
 
 async function api<T>(path: string, method = 'GET', data?: unknown): Promise<T> {
   const response = await fetch(path, {
@@ -93,7 +128,7 @@ export default function LeagueApp() {
   const [selectedTeam, setSelectedTeam] = useState('');
   const [view, setView] = useState<View>('roster');
   const [selectedPlayer, setSelectedPlayer] = useState<number | null>(null);
-  const [teamName, setTeamName] = useState('');
+  const [teamError, setTeamError] = useState('');
   const [settings, setSettings] = useState<Settings | null>(null);
   const [available, setAvailable] = useState<AvailablePlayer[]>([]);
   const [claims, setClaims] = useState<Claim[]>([]);
@@ -104,6 +139,30 @@ export default function LeagueApp() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [appearance, setAppearance] = useState<Appearance>(defaultAppearance);
+  const [matchupWeek, setMatchupWeek] = useState(2);
+
+  function updateAppearance(next: Appearance) {
+    setAppearance(next);
+    if (!account) return;
+    try {
+      localStorage.setItem(`elysian-fields:appearance:${account.id}`, JSON.stringify(next));
+    } catch {
+      // Appearance remains usable when browser storage is unavailable.
+    }
+  }
+
+  useEffect(() => {
+    if (account) setAppearance(readAppearance(account));
+  }, [account?.id]);
+  useEffect(() => {
+    document.documentElement.dataset.theme = appearance.theme;
+    document.documentElement.dataset.accent = appearance.accent;
+    document.documentElement.dataset.density = appearance.density;
+    document.documentElement.dataset.motion = appearance.motion ? 'on' : 'off';
+    const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    themeColor?.setAttribute('content', appearance.theme === 'light' ? '#f7f4ec' : '#0f1418');
+  }, [appearance]);
 
   const loadLeague = useCallback(async () => {
     const next = await api<League>('/api/league');
@@ -111,9 +170,9 @@ export default function LeagueApp() {
     setSettings(next.settings);
   }, []);
   const loadTeam = useCallback(async (id: string) => {
+    setTeamError('');
     const next = await api<Team>('/api/teams/' + encodeURIComponent(id));
     setTeam(next);
-    setTeamName(next.team.teamName);
     setSelectedPlayer(null);
   }, []);
   const loadWaivers = useCallback(async () => {
@@ -146,7 +205,7 @@ export default function LeagueApp() {
   useEffect(() => {
     if (!selectedTeam) return;
     setTeam(null);
-    void loadTeam(selectedTeam).catch((cause: Error) => setError(cause.message));
+    void loadTeam(selectedTeam).catch((cause: Error) => setTeamError(cause.message));
   }, [selectedTeam, loadTeam]);
   useEffect(() => {
     if (view !== 'waivers' || !account) return;
@@ -187,7 +246,7 @@ export default function LeagueApp() {
       setBusy(false);
     }
   }
-  async function saveTeam(roster: Player[], name = teamName) {
+  async function saveTeam(roster: Player[]) {
     if (!team) return;
     setBusy(true);
     setError('');
@@ -195,11 +254,9 @@ export default function LeagueApp() {
     try {
       const next = await api<Team>('/api/teams/' + encodeURIComponent(team.team.id), 'PUT', {
         roster,
-        teamName: name,
         version: team.team.version,
       });
       setTeam(next);
-      setTeamName(next.team.teamName);
       setLeague(
         (old) =>
           old && {
@@ -404,11 +461,15 @@ export default function LeagueApp() {
             {league?.settings.name || 'League'} <ArrowRight size={13} />{' '}
             {view === 'roster'
               ? 'Team'
-              : view === 'league'
-                ? 'League'
-                : view === 'waivers'
-                  ? 'Waivers'
-                  : 'Commissioner'}
+              : view === 'matchups'
+                ? 'Matchups'
+                : view === 'league'
+                  ? 'League'
+                  : view === 'waivers'
+                    ? 'Waivers'
+                    : view === 'appearance'
+                      ? 'Appearance'
+                      : 'Commissioner'}
           </span>
           <span>
             {account.name}
@@ -439,8 +500,11 @@ export default function LeagueApp() {
               <div className="league-heading">
                 <div>
                   <span className="league-eyebrow">WHERE LEGENDS PLAY</span>
-                  <h1>{selectedAccount?.teamName || team?.team.teamName || 'Your team'}</h1>
-                  <p>Roster from the supplied Yahoo starting lineup. Select two players to swap.</p>
+                  <h1>
+                    {team?.team.teamName ||
+                      selectedAccount?.teamName ||
+                      (ownTeam ? account.teamName : 'Team')}
+                  </h1>
                 </div>
                 {commissioner && (
                   <select
@@ -456,32 +520,21 @@ export default function LeagueApp() {
                   </select>
                 )}
               </div>
-              <div className="league-card league-team-editor">
-                <div>
-                  <label htmlFor="team-name">TEAM NAME</label>
-                  <input
-                    id="team-name"
-                    value={teamName}
-                    onChange={(event) => setTeamName(event.target.value)}
-                    maxLength={64}
-                    disabled={!team || busy}
-                  />
-                </div>
-                <button
-                  onClick={() => team && void saveTeam(team.roster)}
-                  disabled={!team || busy || teamName.trim() === team.team.teamName}
-                >
-                  Save team name
-                </button>
-              </div>
               <section
                 className="league-card league-roster"
                 aria-label={ownTeam ? 'Your roster' : 'Selected team roster'}
               >
                 <div className="league-card-title">
                   <h2>{ownTeam ? 'Your lineup' : selectedAccount?.teamName}</h2>
-                  <span>{team?.roster.length ?? '…'} players</span>
+                  <span>
+                    {team
+                      ? `${lineupProjection(team.roster).toFixed(1)} demo projected pts`
+                      : 'Loading'}
+                  </span>
                 </div>
+                <p className="league-demo-note">
+                  Demo projections for layout preview. No live stats feed is connected.
+                </p>
                 {team?.roster.map((player, index) => (
                   <button
                     key={player.playerId}
@@ -492,9 +545,17 @@ export default function LeagueApp() {
                   >
                     <span className="league-slot">{player.slot}</span>
                     <span className="league-player">
-                      <strong className="player-name" data-position={player.position}>
-                        {player.name}
-                      </strong>
+                      <span className="league-player-primary">
+                        <strong className="player-name" data-position={player.position}>
+                          {player.name}
+                        </strong>
+                        <span
+                          className="league-projected-points"
+                          aria-label={`${demoProjection(player).toFixed(1)} demo projected points`}
+                        >
+                          {demoProjection(player).toFixed(1)} <small>proj</small>
+                        </span>
+                      </span>
                       <small>
                         {player.nflTeam} · {player.position}
                       </small>
@@ -502,7 +563,23 @@ export default function LeagueApp() {
                     <ArrowLeftRight size={16} />
                   </button>
                 ))}
-                {!team && <p className="league-empty">Loading roster…</p>}
+                {!team &&
+                  (teamError ? (
+                    <div className="league-empty" role="alert">
+                      <p>Couldn’t load this roster: {teamError}</p>
+                      <button
+                        onClick={() =>
+                          void loadTeam(selectedTeam).catch((cause: Error) =>
+                            setTeamError(cause.message),
+                          )
+                        }
+                      >
+                        Try again
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="league-empty">Loading roster…</p>
+                  ))}
               </section>
               {commissioner && team && (
                 <form
@@ -549,6 +626,58 @@ export default function LeagueApp() {
                   </div>
                 </form>
               )}
+            </>
+          )}
+          {view === 'matchups' && (
+            <>
+              <div className="league-heading">
+                <div>
+                  <span className="league-eyebrow">LEAGUE SCHEDULE</span>
+                  <h1>Matchups</h1>
+                  <p>
+                    Preview schedule · opponents are placeholders until the league season is set.
+                  </p>
+                </div>
+                <label className="league-week-select">
+                  Week
+                  <select
+                    value={matchupWeek}
+                    onChange={(event) => setMatchupWeek(Number(event.target.value))}
+                  >
+                    {Array.from({ length: 9 }, (_, index) => index + 1).map((week) => (
+                      <option key={week} value={week}>
+                        Week {week}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <section className="league-card league-matchups" aria-label="Demo matchups">
+                <div className="league-card-title">
+                  <h2>Week {matchupWeek} pairings</h2>
+                  <span>Demo schedule</span>
+                </div>
+                {demoMatchups(league?.teams ?? [], matchupWeek).map(([home, away]) => (
+                  <div
+                    className={`league-matchup-row ${home.id === account.id || away.id === account.id ? 'mine' : ''}`}
+                    key={`${home.id}-${away.id}`}
+                  >
+                    <div>
+                      <span className="league-avatar">{initials(home.teamName)}</span>
+                      <strong>{home.teamName}</strong>
+                    </div>
+                    <span className="league-versus">VS</span>
+                    <div>
+                      <span className="league-avatar">{initials(away.teamName)}</span>
+                      <strong>{away.teamName}</strong>
+                    </div>
+                    {(home.id === account.id || away.id === account.id) && (
+                      <span className="league-your-game">Your matchup</span>
+                    )}
+                  </div>
+                ))}
+                {!league && <p className="league-empty">Loading matchups…</p>}
+              </section>
             </>
           )}
           {view === 'league' && (
@@ -633,9 +762,17 @@ export default function LeagueApp() {
                   <div className="league-team-row" key={player.playerId}>
                     <span className="league-slot">{player.position}</span>
                     <div>
-                      <strong className="player-name" data-position={player.position}>
-                        {player.name}
-                      </strong>
+                      <span className="league-player-primary">
+                        <strong className="player-name" data-position={player.position}>
+                          {player.name}
+                        </strong>
+                        <span
+                          className="league-projected-points"
+                          aria-label={`${demoProjection(player).toFixed(1)} demo projected points`}
+                        >
+                          {demoProjection(player).toFixed(1)} <small>proj</small>
+                        </span>
+                      </span>
                       <small>
                         {player.nflTeam} · {player.position}
                       </small>
@@ -726,6 +863,84 @@ export default function LeagueApp() {
                   </button>
                 </div>
               )}
+            </>
+          )}
+          {view === 'appearance' && (
+            <>
+              <div className="league-heading">
+                <div>
+                  <span className="league-eyebrow">MAKE IT YOURS</span>
+                  <h1>Appearance.</h1>
+                </div>
+              </div>
+              <section className="league-card league-appearance" aria-label="Appearance settings">
+                <fieldset>
+                  <legend>Theme</legend>
+                  <div className="league-choice-grid">
+                    {(['light', 'dusk', 'dark'] as const).map((theme) => (
+                      <button
+                        key={theme}
+                        type="button"
+                        className={appearance.theme === theme ? 'chosen' : ''}
+                        aria-pressed={appearance.theme === theme}
+                        onClick={() => updateAppearance({ ...appearance, theme })}
+                      >
+                        <span className={`league-theme-preview ${theme}`} aria-hidden="true" />
+                        {theme === 'light'
+                          ? 'Marble day'
+                          : theme === 'dusk'
+                            ? 'Oracle dusk'
+                            : 'Elysian night'}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+                <fieldset>
+                  <legend>Accent</legend>
+                  <div className="league-choice-grid">
+                    {(['mint', 'lavender', 'amber'] as const).map((accent) => (
+                      <button
+                        key={accent}
+                        type="button"
+                        className={appearance.accent === accent ? 'chosen' : ''}
+                        aria-pressed={appearance.accent === accent}
+                        onClick={() => updateAppearance({ ...appearance, accent })}
+                      >
+                        <span className={`league-accent-swatch ${accent}`} aria-hidden="true" />
+                        {accent === 'mint' ? 'Laurel' : accent === 'lavender' ? 'Oracle' : 'Bronze'}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+                <fieldset>
+                  <legend>Layout</legend>
+                  <div className="league-choice-grid two">
+                    {(['comfortable', 'compact'] as const).map((density) => (
+                      <button
+                        key={density}
+                        type="button"
+                        className={appearance.density === density ? 'chosen' : ''}
+                        aria-pressed={appearance.density === density}
+                        onClick={() => updateAppearance({ ...appearance, density })}
+                      >
+                        {density === 'comfortable' ? 'Comfortable rows' : 'Compact rows'}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+                <fieldset>
+                  <legend>Motion</legend>
+                  <button
+                    type="button"
+                    className={`league-motion-choice ${appearance.motion ? 'chosen' : ''}`}
+                    aria-pressed={appearance.motion}
+                    onClick={() => updateAppearance({ ...appearance, motion: !appearance.motion })}
+                  >
+                    Subtle animations {appearance.motion ? 'on' : 'off'}
+                  </button>
+                </fieldset>
+                <p>Saved on this device for {account.name}.</p>
+              </section>
             </>
           )}
           {view === 'commissioner' && commissioner && settings && (

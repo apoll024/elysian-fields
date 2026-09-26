@@ -528,10 +528,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json_response(200, {"team": public_account(row), "roster": json.loads(row["roster_json"])})
             data = self.body()
             roster = data.get("roster") if isinstance(data, dict) else None
-            name = data.get("teamName") if isinstance(data, dict) else None
             version = data.get("version") if isinstance(data, dict) else None
-            if not isinstance(name, str) or not 1 <= len(name.strip()) <= 64:
-                return self.json_response(400, {"error": "Invalid team name"})
+            if isinstance(data, dict) and "teamName" in data and data["teamName"] != row["team_name"]:
+                return self.json_response(400, {"error": "Team name is assigned to this account"})
             if not roster_valid(json.loads(row["roster_json"]), roster):
                 return self.json_response(400, {"error": "Roster players or positions do not match this team"})
             if type(version) is not int or version != row["version"]:
@@ -539,8 +538,8 @@ class Handler(BaseHTTPRequestHandler):
             players = {p["playerId"]: p for p in json.loads(row["roster_json"])}
             normalized = [{**players[entry["playerId"]], "slot": entry["slot"]} for entry in roster]
             changed = db.execute(
-                "UPDATE accounts SET team_name=?,roster_json=?,version=version+1 WHERE id=? AND version=?",
-                (name.strip(), json.dumps(normalized, ensure_ascii=False), team_id, version),
+                "UPDATE accounts SET roster_json=?,version=version+1 WHERE id=? AND version=?",
+                (json.dumps(normalized, ensure_ascii=False), team_id, version),
             ).rowcount
             if not changed:
                 db.rollback()

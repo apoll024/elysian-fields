@@ -36,13 +36,15 @@ In another terminal run `npm run dev`, then open http://127.0.0.1:5173. Vite pro
 
 ## Team and commissioner actions
 
-Managers can view their own roster, change their team name, swap eligible lineup slots, and submit or cancel waiver claims. Each change is saved by the server and checked against roster membership and position eligibility. A failed save leaves the current roster visible with an error message.
+Managers can view their assigned roster, swap eligible lineup slots, and submit or cancel waiver claims. Team names are fixed to their imported accounts. Each roster change is saved by the server and checked against roster membership and position eligibility. A failed save leaves the current roster visible with an error message.
+
+Each account can choose a light, dusk, or dark theme, a laurel, oracle, or bronze accent, comfortable or compact rows, and reduced motion from Appearance. These display preferences are saved in that browser for the account.
 
 Ryan alone can open other teams for editing, change league settings, add players to the free-agent pool, and process waiver claims on demand. These restrictions are enforced by API checks in addition to the UI. A shared password means someone who signs in _as Ryan_ can use commissioner controls; use a unique Ryan password if that access must be exclusive to him.
 
 Waivers use rolling priority, initially ordered as the accounts above. Claims run daily after 3:00 a.m. America/Los_Angeles. A successful claim replaces the nominated drop player, moves the claimant to the end of the priority list, and holds the dropped player for 24 hours. The supplied export contains rosters but no free-agent list; Ryan can add free agents in the waiver view.
 
-This snapshot does not include live scores, projections, or a Yahoo sync. The league setting labels are stored but scoring calculations and game-time lineup locks are not yet enforced.
+Roster rows show clearly labeled demo projected points. The Matchups section displays a fabricated nine-week round robin. These are layout previews, not live scores or provider projections. [Player data options](docs/player-data-options.md) compares sources for a future integration. The league setting labels are stored but scoring calculations and game-time lineup locks are not yet enforced.
 
 ## Deployment
 
