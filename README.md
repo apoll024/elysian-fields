@@ -1,6 +1,10 @@
 # Elysian Fields
 
-An Olympus-themed fantasy football league app. Ten password-protected accounts and their Week 2, 2026 rosters come from the supplied Yahoo Starting Rosters HTML export. Ryan is the sole commissioner. The API stores teams, sessions, league settings, and waiver claims in SQLite; the frontend no longer depends on browser-local demo profiles.
+Alpha build live at https://elysian.170.9.6.93.sslip.io/  
+
+Focus on mobile optimization, runs on PC browser but priority is mobile user experience. 
+
+An Olympus-themed fantasy football league app. Ten password-protected accounts and their rosters come from the supplied Yahoo Starting Rosters HTML export. Ryan is the sole commissioner. The API stores teams, sessions, league settings, and waiver claims in SQLite; the frontend no longer depends on browser-local demo profiles.
 
 ## Accounts and rosters
 
